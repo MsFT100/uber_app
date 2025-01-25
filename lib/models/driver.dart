@@ -15,17 +15,18 @@ class DriverModel {
   static const VOTES = "votes";
   static const PHONE = "phone";
 
-  String _id;
-  String _name;
-  String _car;
-  String _plate;
-  String _photo;
-  String _phone;
+  String _id = ""; // Initialize with a default empty value
+  String _name = ""; // Initialize with a default empty value
+  String _car = ""; // Initialize with a default empty value
+  String _plate = ""; // Initialize with a default empty value
+  String _photo = ""; // Initialize with a default empty value
+  String _phone = ""; // Initialize with a default empty value
 
-  double _rating;
-  int _votes;
+  double _rating = 0.0; // Initialize with a default value
+  int _votes = 0; // Initialize with a default value
 
-  DriverPosition _position;
+  DriverPosition _position = DriverPosition(
+      lat: 0.0, lng: 0.0, heading: 0.0); // Initialize with default position
 
   String get id => _id;
 
@@ -46,19 +47,22 @@ class DriverModel {
   int get votes => _votes;
 
   DriverModel.fromSnapshot(DocumentSnapshot snapshot) {
-    _name = snapshot.data[NAME];
-    _id = snapshot.data[ID];
-    _car = snapshot.data[CAR];
-    _plate = snapshot.data[PLATE];
-    _photo = snapshot.data[PHOTO];
-    _phone = snapshot.data[PHONE];
+    // Ensure that snapshot data is a Map<String, dynamic>
+    Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
 
-    _rating = snapshot.data[RATING];
-    _votes = snapshot.data[VOTES];
+    _name = data[NAME];
+    _id = data[ID];
+    _car = data[CAR];
+    _plate = data[PLATE];
+    _photo = data[PHOTO];
+    _phone = data[PHONE];
+
+    _rating = data[RATING];
+    _votes = data[VOTES];
     _position = DriverPosition(
-        lat: snapshot.data[POSITION][LATITUDE],
-        lng: snapshot.data[POSITION][LONGITUDE],
-        heading: snapshot.data[POSITION][HEADING]);
+        lat: data[POSITION][LATITUDE],
+        lng: data[POSITION][LONGITUDE],
+        heading: data[POSITION][HEADING]);
   }
 
   LatLng getPosition() {
@@ -71,5 +75,5 @@ class DriverPosition {
   final double lng;
   final double heading;
 
-  DriverPosition({this.lat, this.lng, this.heading});
+  DriverPosition({required this.lat, required this.lng, required this.heading});
 }

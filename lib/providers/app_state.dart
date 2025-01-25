@@ -1,24 +1,26 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:geoflutterfire/geoflutterfire.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:txapita/helpers/constants.dart';
-import 'package:txapita/helpers/style.dart';
-import 'package:txapita/models/driver.dart';
-import 'package:txapita/models/ride_Request.dart';
-import 'package:txapita/models/route.dart';
-import 'package:txapita/models/user.dart';
-import 'package:txapita/services/drivers.dart';
-import 'package:txapita/services/map_requests.dart';
-import 'package:txapita/services/ride_requests.dart';
-import 'package:txapita/widgets/custom_btn.dart';
-import 'package:txapita/widgets/custom_text.dart';
-import 'package:txapita/widgets/stars.dart';
 import 'package:uuid/uuid.dart';
+
+import '../helpers/constants.dart';
+import '../helpers/style.dart';
+import '../models/driver.dart';
+import '../models/ride_Request.dart';
+import '../models/route.dart';
+import '../models/user.dart';
+import '../services/drivers.dart';
+import '../services/map_requests.dart';
+import '../services/ride_requests.dart';
+import '../widgets/custom_btn.dart';
+import '../widgets/custom_text.dart';
+import '../widgets/stars.dart';
 
 // * THIS ENUM WILL CONTAIN THE DRAGGABLE WIDGET TO BE DISPLAYED ON THE MAIN SCREEN
 enum Show {
@@ -40,9 +42,6 @@ class AppStateProvider with ChangeNotifier {
   static const REQUEST_ACCEPTED_NOTIFICATION = 'REQUEST_ACCEPTED';
   static const TRIP_STARTED_NOTIFICATION = 'TRIP_STARTED';
 
-
-
-
   Set<Marker> _markers = {};
   //  this polys will be displayed on the map
   Set<Polyline> _poly = {};
@@ -52,22 +51,22 @@ class AppStateProvider with ChangeNotifier {
   Set<Polyline> _routeToDriverpoly = {};
 
   GoogleMapsServices _googleMapsServices = GoogleMapsServices();
-  GoogleMapController _mapController;
-  Geoflutterfire geo = Geoflutterfire();
-  static LatLng _center;
+  late GoogleMapController _mapController;
+
+  static LatLng _center = LatLng(0, 0);
   LatLng _lastPosition = _center;
   TextEditingController pickupLocationControlelr = TextEditingController();
   TextEditingController destinationController = TextEditingController();
-  Position position;
+  late Position position;
   DriverService _driverService = DriverService();
   //  draggable to show
   Show show = Show.DESTINATION_SELECTION;
 
   //   taxi pin
-  BitmapDescriptor carPin;
+  late BitmapDescriptor carPin;
 
   //   location pin
-  BitmapDescriptor locationPin;
+  late BitmapDescriptor locationPin;
 
   LatLng get center => _center;
 
@@ -78,7 +77,7 @@ class AppStateProvider with ChangeNotifier {
   Set<Polyline> get poly => _poly;
 
   GoogleMapController get mapController => _mapController;
-  RouteModel routeModel;
+  late RouteModel routeModel;
 
   //  Driver request related variables
   bool lookingForDriver = false;
@@ -88,63 +87,92 @@ class AppStateProvider with ChangeNotifier {
   RideRequestServices _requestServices = RideRequestServices();
   int timeCounter = 0;
   double percentage = 0;
-  Timer periodicTimer;
-  String requestedDestination;
+  late Timer periodicTimer;
+  late String requestedDestination;
 
   String requestStatus = "";
-  double requestedDestinationLat;
+  late double requestedDestinationLat;
 
-  double requestedDestinationLng;
-  RideRequestModel rideRequestModel;
-  BuildContext mainContext;
+  late double requestedDestinationLng;
+  late RideRequestModel rideRequestModel;
+  late BuildContext mainContext;
 
 //  this variable will listen to the status of the ride request
-  StreamSubscription<QuerySnapshot> requestStream;
+  late StreamSubscription<QuerySnapshot> requestStream;
   // this variable will keep track of the drivers position before and during the ride
-  StreamSubscription<QuerySnapshot> driverStream;
+  late StreamSubscription<QuerySnapshot> driverStream;
 //  this stream is for all the driver on the app
-  StreamSubscription<List<DriverModel>> allDriversStream;
+  late StreamSubscription<List<DriverModel>> allDriversStream;
 
-  DriverModel driverModel;
-  LatLng pickupCoordinates;
-  LatLng destinationCoordinates;
+  late DriverModel driverModel;
+  late LatLng pickupCoordinates;
+  late LatLng destinationCoordinates;
   double ridePrice = 0;
   String notificationType = "";
 
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+
   AppStateProvider() {
     _saveDeviceToken();
-    fcm.configure(
-//      this callback is used when the app runs on the foreground
-        onMessage: handleOnMessage,
-//        used when the app is closed completely and is launched using the notification
-        onLaunch: handleOnLaunch,
-//        when its on the background and opened using the notification drawer
-        onResume: handleOnResume);
+
+    // Foreground message handling
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      handleOnMessage(message as Map<String, dynamic>);
+    });
+
+    // App launched by tapping a notification
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      handleOnLaunch(message as Map<String, dynamic>);
+    });
+
+    // App is in the background, and notification taps open the app
+    messaging.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        handleOnResume(message as Map<String, dynamic>);
+      }
+    });
 
     _setCustomMapPin();
     _getUserLocation();
     _listemToDrivers();
-    Geolocator().getPositionStream().listen(_updatePosition);
-
+    Geolocator.getPositionStream().listen(_updatePosition);
   }
 
+  get destinationAddress => null;
+
+  get pickupAddress => null;
+
 // ANCHOR: MAPS & LOCATION METHODS
-  _updatePosition(Position newPosition){
+  _updatePosition(Position newPosition) {
     position = newPosition;
     notifyListeners();
   }
+
   Future<Position> _getUserLocation() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    position = await Geolocator().getCurrentPosition();
-    List<Placemark> placemark = await Geolocator()
-        .placemarkFromCoordinates(position.latitude, position.longitude);
 
-    if (prefs.getString(COUNTRY) == null) {
-      String country = placemark[0].isoCountryCode.toLowerCase();
+    // Get the current position
+    position = await Geolocator.getCurrentPosition();
+
+    // Fetch the placemark using coordinates
+    List<Placemark> placemarks = await placemarkFromCoordinates(
+      position.latitude,
+      position.longitude,
+    );
+
+    // Check if placemarks are available and extract the isoCountryCode
+    String? countryCode =
+        placemarks.isNotEmpty ? placemarks[0].isoCountryCode : null;
+
+    // Save the country code in lowercase if it's not already set
+    if (prefs.getString(COUNTRY) == null && countryCode != null) {
+      String country = countryCode.toLowerCase();
       await prefs.setString(COUNTRY, country);
     }
 
+    // Update the center position
     _center = LatLng(position.latitude, position.longitude);
+
     notifyListeners();
     return position;
   }
@@ -170,10 +198,10 @@ class AppStateProvider with ChangeNotifier {
             _markers.remove(element);
             pickupCoordinates = position.target;
             addPickupMarker(position.target);
-            List<Placemark> placemark = await Geolocator()
-                .placemarkFromCoordinates(
-                    position.target.latitude, position.target.longitude);
-            pickupLocationControlelr.text = placemark[0].name;
+            List<Placemark> placemark = await placemarkFromCoordinates(
+                position.target.latitude, position.target.longitude);
+            pickupLocationControlelr.text = placemark[0].name ??
+                'Unknown location'; // Providing fallback value
             notifyListeners();
           }
         });
@@ -182,7 +210,8 @@ class AppStateProvider with ChangeNotifier {
     }
   }
 
-  Future sendRequest({LatLng origin, LatLng destination}) async {
+  Future sendRequest(
+      {required LatLng origin, required LatLng destination}) async {
     LatLng _org;
     LatLng _dest;
 
@@ -211,22 +240,21 @@ class AppStateProvider with ChangeNotifier {
 // ! another method will be created just to draw the polys and add markers
     _addLocationMarker(destinationCoordinates, routeModel.distance.text);
     _center = destinationCoordinates;
-    if (_poly != null) {
-      _createRoute(route.points, color: Colors.deepOrange);
-    }
+    _createRoute(route.points, color: Colors.deepOrange);
     _createRoute(
       route.points,
+      color: Colors.black54,
     );
     _routeToDestinationPolys = _poly;
     notifyListeners();
   }
 
-  void updateDestination({String destination}) {
+  void updateDestination({required String destination}) {
     destinationController.text = destination;
     notifyListeners();
   }
 
-  _createRoute(String decodeRoute, {Color color}) {
+  _createRoute(String decodeRoute, {required Color color}) {
     clearPoly();
     var uuid = new Uuid();
     String polyId = uuid.v1();
@@ -249,25 +277,27 @@ class AppStateProvider with ChangeNotifier {
     return result;
   }
 
-  List _decodePoly(String poly) {
+  List<double> _decodePoly(String poly) {
     var list = poly.codeUnits;
-    var lList = new List();
+    var lList = <double>[]; // Use a typed list for better clarity
     int index = 0;
     int len = poly.length;
     int c = 0;
-// repeating until all attributes are decoded
+
+    // Repeating until all attributes are decoded
     do {
       var shift = 0;
       int result = 0;
 
-      // for decoding value of one attribute
+      // Decoding value of one attribute
       do {
         c = list[index] - 63;
         result |= (c & 0x1F) << (shift * 5);
         index++;
         shift++;
       } while (c >= 32);
-      /* if value is negetive then bitwise not the value */
+
+      // If value is negative, bitwise NOT the value
       if (result & 1 == 1) {
         result = ~result;
       }
@@ -275,8 +305,10 @@ class AppStateProvider with ChangeNotifier {
       lList.add(result1);
     } while (index < len);
 
-/*adding to previous value as done in encoding */
-    for (var i = 2; i < lList.length; i++) lList[i] += lList[i - 2];
+    // Adding to the previous value as done in encoding
+    for (var i = 2; i < lList.length; i++) {
+      lList[i] += lList[i - 2];
+    }
 
     print(lList.toString());
 
@@ -309,7 +341,10 @@ class AppStateProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void _addDriverMarker({LatLng position, double rotation, String driverId}) {
+  void _addDriverMarker(
+      {required LatLng position,
+      required double rotation,
+      required String driverId}) {
     var uuid = new Uuid();
     String markerId = uuid.v1();
     _markers.add(Marker(
@@ -354,10 +389,10 @@ class AppStateProvider with ChangeNotifier {
   }
 
   _setCustomMapPin() async {
-    carPin = await BitmapDescriptor.fromAssetImage(
+    carPin = await BitmapDescriptor.asset(
         ImageConfiguration(devicePixelRatio: 2.5), 'images/taxi.png');
 
-    locationPin = await BitmapDescriptor.fromAssetImage(
+    locationPin = await BitmapDescriptor.asset(
         ImageConfiguration(devicePixelRatio: 2.5), 'images/pin.png');
   }
 
@@ -389,7 +424,7 @@ class AppStateProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  changeWidgetShowed({Show showWidget}) {
+  changeWidgetShowed({required Show showWidget}) {
     show = showWidget;
     notifyListeners();
   }
@@ -472,7 +507,7 @@ class AppStateProvider with ChangeNotifier {
                               borderRadius: BorderRadius.circular(40)),
                           child: CircleAvatar(
                             radius: 45,
-                            backgroundImage: NetworkImage(driverModel?.photo),
+                            backgroundImage: NetworkImage(driverModel!.photo),
                           ),
                         ),
                       )
@@ -491,7 +526,7 @@ class AppStateProvider with ChangeNotifier {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      FlatButton.icon(
+                      TextButton.icon(
                           onPressed: null,
                           icon: Icon(Icons.directions_car),
                           label: Text(driverModel.car ?? "Nan")),
@@ -524,16 +559,15 @@ class AppStateProvider with ChangeNotifier {
         });
   }
 
-  _stars({int votes, double rating}) {
+  _stars({required int votes, required double rating}) {
     if (votes == 0) {
       return StarsWidget(
         numberOfStars: 0,
+        key: null,
       );
     } else {
       double finalRate = rating / votes;
-      return StarsWidget(
-        numberOfStars: finalRate.floor(),
-      );
+      return StarsWidget(numberOfStars: finalRate.floor());
     }
   }
 
@@ -541,19 +575,22 @@ class AppStateProvider with ChangeNotifier {
   _saveDeviceToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (prefs.getString('token') == null) {
-      String deviceToken = await fcm.getToken();
-      await prefs.setString('token', deviceToken);
+      String? deviceToken = await fcm.getToken();
+      await prefs.setString('token', deviceToken!);
     }
   }
 
-  changeRequestedDestination({String reqDestination, double lat, double lng}) {
+  changeRequestedDestination(
+      {required String reqDestination,
+      required double lat,
+      required double lng}) {
     requestedDestination = reqDestination;
     requestedDestinationLat = lat;
     requestedDestinationLng = lng;
     notifyListeners();
   }
 
-  listenToRequest({String id, BuildContext context}) async {
+  listenToRequest({required String id, required BuildContext context}) async {
     requestStream = _requestServices.requestStream().listen((querySnapshot) {
       querySnapshot.documentChanges.forEach((doc) async {
         if (doc.document.data['id'] == id) {
@@ -588,20 +625,21 @@ class AppStateProvider with ChangeNotifier {
   }
 
   requestDriver(
-      {UserModel user,
-      double lat,
-      double lng,
-      BuildContext context,
-      Map distance}) {
+      {required UserModel user,
+      required double lat,
+      required double lng,
+      required BuildContext context,
+      required Map distance}) {
     alertsOnUi = true;
     notifyListeners();
     var uuid = new Uuid();
     String id = uuid.v1();
+    Map<String, dynamic> distanceMap = Map<String, dynamic>.from(distance);
     _requestServices.createRideRequest(
         id: id,
         userId: user.id,
         username: user.name,
-        distance: distance,
+        distance: distanceMap,
         destination: {
           "address": requestedDestination,
           "latitude": requestedDestinationLat,
@@ -614,7 +652,6 @@ class AppStateProvider with ChangeNotifier {
     listenToRequest(id: id, context: context);
     percentageCounter(requestId: id, context: context);
   }
-  
 
   cancelRequest() {
     lookingForDriver = false;
@@ -642,9 +679,9 @@ class AppStateProvider with ChangeNotifier {
           sendRequest(
               origin: pickupCoordinates,
               destination: driverModel.getPosition());
-              if(routeModel.distance.value <= 200){
-                driverArrived = true;
-              }
+          if (routeModel.distance.value <= 200) {
+            driverArrived = true;
+          }
           notifyListeners();
 
           _addDriverMarker(
@@ -667,7 +704,8 @@ class AppStateProvider with ChangeNotifier {
   }
 
 //  Timer counter for driver request
-  percentageCounter({String requestId, BuildContext context}) {
+  percentageCounter(
+      {required String requestId, required BuildContext context}) {
     lookingForDriver = true;
     notifyListeners();
     periodicTimer = Timer.periodic(Duration(seconds: 1), (time) {
@@ -691,17 +729,17 @@ class AppStateProvider with ChangeNotifier {
     });
   }
 
-  setPickCoordinates({LatLng coordinates}) {
+  setPickCoordinates({required LatLng coordinates}) {
     pickupCoordinates = coordinates;
     notifyListeners();
   }
 
-  setDestination({LatLng coordinates}) {
+  setDestination({required LatLng coordinates}) {
     destinationCoordinates = coordinates;
     notifyListeners();
   }
 
-  changePickupLocationAddress({String address}) {
+  changePickupLocationAddress({required String address}) {
     pickupLocationControlelr.text = address;
     if (pickupCoordinates != null) {
       _center = pickupCoordinates;
@@ -714,27 +752,21 @@ class AppStateProvider with ChangeNotifier {
     print("=== data = ${data.toString()}");
     notificationType = data['data']['type'];
 
-    if(notificationType == DRIVER_AT_LOCATION_NOTIFICATION){
-
-    }else if(notificationType == TRIP_STARTED_NOTIFICATION){
+    if (notificationType == DRIVER_AT_LOCATION_NOTIFICATION) {
+    } else if (notificationType == TRIP_STARTED_NOTIFICATION) {
       show = Show.TRIP;
-      sendRequest(origin: pickupCoordinates, destination: destinationCoordinates);
+      sendRequest(
+          origin: pickupCoordinates, destination: destinationCoordinates);
       notifyListeners();
-    }else if(notificationType == REQUEST_ACCEPTED_NOTIFICATION){
-
-    }
+    } else if (notificationType == REQUEST_ACCEPTED_NOTIFICATION) {}
     notifyListeners();
   }
 
   Future handleOnLaunch(Map<String, dynamic> data) async {
     notificationType = data['data']['type'];
-    if(notificationType == DRIVER_AT_LOCATION_NOTIFICATION){
-
-    }else if(notificationType == TRIP_STARTED_NOTIFICATION){
-
-    }else if(notificationType == REQUEST_ACCEPTED_NOTIFICATION){
-
-    }
+    if (notificationType == DRIVER_AT_LOCATION_NOTIFICATION) {
+    } else if (notificationType == TRIP_STARTED_NOTIFICATION) {
+    } else if (notificationType == REQUEST_ACCEPTED_NOTIFICATION) {}
     driverModel = await _driverService.getDriverById(data['data']['driverId']);
     _stopListeningToDriversStream();
 
@@ -746,13 +778,9 @@ class AppStateProvider with ChangeNotifier {
     notificationType = data['data']['type'];
 
     _stopListeningToDriversStream();
-    if(notificationType == DRIVER_AT_LOCATION_NOTIFICATION){
-
-    }else if(notificationType == TRIP_STARTED_NOTIFICATION){
-
-    }else if(notificationType == REQUEST_ACCEPTED_NOTIFICATION){
-
-    }
+    if (notificationType == DRIVER_AT_LOCATION_NOTIFICATION) {
+    } else if (notificationType == TRIP_STARTED_NOTIFICATION) {
+    } else if (notificationType == REQUEST_ACCEPTED_NOTIFICATION) {}
 
     if (lookingForDriver) Navigator.pop(mainContext);
     lookingForDriver = false;
@@ -760,4 +788,8 @@ class AppStateProvider with ChangeNotifier {
     periodicTimer.cancel();
     notifyListeners();
   }
+}
+
+extension on QuerySnapshot<Object?> {
+  get documentChanges => null;
 }

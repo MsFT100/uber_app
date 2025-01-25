@@ -1,33 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_google_places/flutter_google_places.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:geocoder/geocoder.dart';
+import 'package:flutter_google_places_hoc081098/google_maps_webservice_places.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:txapita/helpers/constants.dart';
-import 'package:txapita/helpers/screen_navigation.dart';
-import 'package:txapita/helpers/style.dart';
-import 'package:txapita/providers/app_state.dart';
-import "package:google_maps_webservice/places.dart";
-import 'package:txapita/providers/user.dart';
-import 'package:txapita/screens/splash.dart';
-import 'package:txapita/widgets/custom_text.dart';
-import 'package:txapita/widgets/destination_selection.dart';
-import 'package:txapita/widgets/driver_found.dart';
-import 'package:txapita/widgets/loading.dart';
-import 'package:txapita/widgets/payment_method_selection.dart';
-import 'package:txapita/widgets/pickup_selection_widget.dart';
-import 'package:txapita/widgets/trip_draggable.dart';
 
+import '../helpers/constants.dart';
+import '../helpers/screen_navigation.dart';
 import '../helpers/style.dart';
-import '../helpers/style.dart';
-import '../helpers/style.dart';
+import '../providers/app_state.dart';
+import '../providers/user.dart';
+import '../widgets/custom_text.dart';
+import '../widgets/destination_selection.dart';
+import '../widgets/driver_found.dart';
+import '../widgets/loading.dart';
+import '../widgets/payment_method_selection.dart';
+import '../widgets/pickup_selection_widget.dart';
+import '../widgets/trip_draggable.dart';
 import 'login.dart';
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  MyHomePage({super.key, required this.title});
   final String title;
 
   @override
@@ -95,26 +88,30 @@ class _MyHomePageState extends State<MyHomePage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          child: appState.driverArrived ? Container(
-                            color: green,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: CustomText(
-                                text: "Meet driver at the pick up location",
-                                color: Colors.white,
-                              ),
-                            ),
-                          ) : Container(
-                            color: primary,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: CustomText(
-                                text: "Meet driver at the pick up location",
-                                weight: FontWeight.w300,
-                                color: white,
-                              ),
-                            ),
-                          ),
+                          child: appState.driverArrived
+                              ? Container(
+                                  color: green,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: CustomText(
+                                      text:
+                                          "Meet driver at the pick up location",
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  color: primary,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: CustomText(
+                                      text:
+                                          "Meet driver at the pick up location",
+                                      weight: FontWeight.w300,
+                                      color: white,
+                                    ),
+                                  ),
+                                ),
                         ),
                       ],
                     ),
@@ -134,20 +131,20 @@ class _MyHomePageState extends State<MyHomePage> {
                           child: Container(
                             color: primary,
                             child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: RichText(text: TextSpan(
-                                children: [
+                                padding: const EdgeInsets.all(16),
+                                child: RichText(
+                                    text: TextSpan(children: [
                                   TextSpan(
-                                    text: "You\'ll reach your desiation in \n",
-                                    style: TextStyle(fontWeight: FontWeight.w300)
-                                  ),
+                                      text:
+                                          "You\'ll reach your desiation in \n",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w300)),
                                   TextSpan(
-                                      text: appState.routeModel?.timeNeeded?.text ?? "",
-                                      style: TextStyle(fontSize: 22)
-                                  ),
-                                ]
-                              ))
-                            ),
+                                      text: appState
+                                              .routeModel?.timeNeeded?.text ??
+                                          "",
+                                      style: TextStyle(fontSize: 22)),
+                                ]))),
                           ),
                         ),
                       ],
@@ -178,8 +175,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
             //  ANCHOR Draggable DRIVER
             Visibility(
-                visible: appState.show == Show.TRIP,
-                child: TripWidget()),
+                visible: appState.show == Show.TRIP, child: TripWidget()),
           ],
         ),
       ),
@@ -197,7 +193,7 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  GoogleMapsPlaces googlePlaces;
+  late GoogleMapsPlaces googlePlaces;
   TextEditingController destinationController = TextEditingController();
   Color darkBlue = Colors.black;
   Color grey = Colors.grey;
@@ -240,64 +236,46 @@ class _MapScreenState extends State<MapScreen> {
                       size: 30,
                     ),
                     onPressed: () {
-                      scaffoldSate.currentState.openDrawer();
+                      scaffoldSate.currentState?.openDrawer();
                     }),
               ),
-//              Positioned(
-//                bottom: 60,
-//                right: 0,
-//                left: 0,
-//                height: 60,
-//                child: Visibility(
-//                  visible: appState.routeModel != null,
-//                  child: Padding(
-//                    padding: const EdgeInsets.only(left: 15.0, right: 15.0),
-//                    child: Container(
-//                      color: Colors.white,
-//                      child: Row(
-//                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//                        children: <Widget>[
-//                          FlatButton.icon(
-//                              onPressed: null,
-//                              icon: Icon(Icons.timer),
-//                              label: Text(
-//                                  appState.routeModel?.timeNeeded?.text ?? "")),
-//                          FlatButton.icon(
-//                              onPressed: null,
-//                              icon: Icon(Icons.flag),
-//                              label: Text(
-//                                  appState.routeModel?.distance?.text ?? "")),
-//                          FlatButton(
-//                              onPressed: () {},
-//                              child: CustomText(
-//                                text:
-//                                    "\$${appState.routeModel?.distance?.value == null ? 0 : appState.routeModel?.distance?.value / 500}" ??
-//                                        "",
-//                                color: Colors.deepOrange,
-//                              ))
-//                        ],
-//                      ),
-//                    ),
-//                  ),
-//                ),
-//              ),
             ],
           );
   }
 
-  Future<Null> displayPrediction(Prediction p) async {
+  Future<void> displayPrediction(Prediction? p) async {
     if (p != null) {
-      PlacesDetailsResponse detail =
-          await places.getDetailsByPlaceId(p.placeId);
+      try {
+        // Fetch place details using the place ID
+        String placeId = p.placeId ?? '';
+        PlacesDetailsResponse detail = (await places
+            .getDetailsByPlaceId(placeId)) as PlacesDetailsResponse;
 
-      var placeId = p.placeId;
-      double lat = detail.result.geometry.location.lat;
-      double lng = detail.result.geometry.location.lng;
+        // Extract latitude and longitude
+        double? lat = detail.result.geometry?.location.lat;
+        double? lng = detail.result.geometry?.location.lng;
 
-      var address = await Geocoder.local.findAddressesFromQuery(p.description);
+        if (lat != null && lng != null) {
+          // Use geocoding to fetch address from latitude and longitude
+          List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
 
-      print(lat);
-      print(lng);
+          if (placemarks.isNotEmpty) {
+            Placemark placemark = placemarks.first;
+
+            print("Latitude: $lat, Longitude: $lng");
+            print(
+                "Address: ${placemark.street ?? 'No street info'}, ${placemark.locality ?? 'No locality info'}, ${placemark.country ?? 'No country info'}");
+          } else {
+            print("No address found for coordinates.");
+          }
+        } else {
+          print("Could not fetch geometry details.");
+        }
+      } catch (e) {
+        print("Error fetching place details: $e");
+      }
+    } else {
+      print("No prediction selected.");
     }
   }
 }

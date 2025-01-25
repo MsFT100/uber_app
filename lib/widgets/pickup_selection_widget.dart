@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_google_places/flutter_google_places.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:flutter_google_places_hoc081098/flutter_google_places_hoc081098.dart';
+import 'package:flutter_google_places_hoc081098/src/google_maps_webservice/places.dart'
+    as hoc081098_places;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_maps_webservice/places.dart';
-import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:txapita/helpers/constants.dart';
-import 'package:txapita/helpers/style.dart';
-import 'package:txapita/providers/app_state.dart';
-import 'package:txapita/providers/user.dart';
 
+import '../helpers/constants.dart';
+import '../helpers/style.dart';
+import '../providers/app_state.dart';
+import '../providers/user.dart';
 import 'custom_text.dart';
 
 class PickupSelectionWidget extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldState;
 
-  const PickupSelectionWidget({Key key, this.scaffoldState}) : super(key: key);
+  const PickupSelectionWidget({super.key, required this.scaffoldState});
+
   @override
   Widget build(BuildContext context) {
     UserProvider userProvider = Provider.of<UserProvider>(context);
@@ -25,27 +25,25 @@ class PickupSelectionWidget extends StatelessWidget {
     return DraggableScrollableSheet(
       initialChildSize: 0.28,
       minChildSize: 0.28,
-      builder: (BuildContext context, myscrollController) {
+      builder: (BuildContext context, ScrollController myScrollController) {
         return Container(
-          decoration: BoxDecoration(color: white,
-//                        borderRadius: BorderRadius.only(
-//                            topLeft: Radius.circular(20),
-//                            topRight: Radius.circular(20)),
-              boxShadow: [
-                BoxShadow(
-                    color: grey.withOpacity(.8),
-                    offset: Offset(3, 2),
-                    blurRadius: 7)
-              ]),
-          child: ListView(
-            controller: myscrollController,
-            children: [
-              SizedBox(
-                height: 12,
+          decoration: BoxDecoration(
+            color: white,
+            boxShadow: [
+              BoxShadow(
+                color: grey.withOpacity(0.8),
+                offset: const Offset(3, 2),
+                blurRadius: 7,
               ),
+            ],
+          ),
+          child: ListView(
+            controller: myScrollController,
+            children: [
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                children: const [
                   CustomText(
                     text: "Move the pin to adjust pickup location",
                     size: 12,
@@ -53,57 +51,74 @@ class PickupSelectionWidget extends StatelessWidget {
                   ),
                 ],
               ),
-              Divider(),
-              SizedBox(
-                height: 8,
-              ),
+              const Divider(),
+              const SizedBox(height: 8),
               Padding(
-                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Container(
-                  color: grey.withOpacity(.3),
+                  decoration: BoxDecoration(
+                    color: grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: TextField(
                     onTap: () async {
                       SharedPreferences preferences =
                           await SharedPreferences.getInstance();
-                      Prediction p = await PlacesAutocomplete.show(
-                          context: context,
+                      final String? country = preferences.getString(COUNTRY);
+
+                      // Launch Places Autocomplete
+                      final hoc081098_places.Prediction? prediction =
+                          await PlacesAutocomplete.show(
+                        context: context,
+                        apiKey: GOOGLE_MAPS_API_KEY,
+                        mode: Mode.overlay,
+                        components: country != null
+                            ? [
+                                hoc081098_places.Component(
+                                    hoc081098_places.Component.country, country)
+                              ]
+                            : [],
+                      );
+
+                      if (prediction != null) {
+                        // Fetch place details
+                        final hoc081098_places.PlacesDetailsResponse detail =
+                            await hoc081098_places.GoogleMapsPlaces(
                           apiKey: GOOGLE_MAPS_API_KEY,
-                          mode: Mode.overlay, // Mode.fullscreen
-                          // language: "pt",
-                          components: [
-                            new Component(Component.country,
-                                preferences.getString(COUNTRY))
-                          ]);
-                      PlacesDetailsResponse detail =
-                          await places.getDetailsByPlaceId(p.placeId);
-                      double lat = detail.result.geometry.location.lat;
-                      double lng = detail.result.geometry.location.lng;
-                      appState.changeRequestedDestination(
-                          reqDestination: p.description, lat: lat, lng: lng);
-                      appState.updateDestination(destination: p.description);
-                      LatLng coordinates = LatLng(lat, lng);
-                      appState.setPickCoordinates(coordinates: coordinates);
-                      appState.changePickupLocationAddress(
-                          address: p.description);
+                        ).getDetailsByPlaceId(prediction.placeId ?? '');
+
+                        final lat = detail.result.geometry?.location.lat ?? 0.0;
+                        final lng = detail.result.geometry?.location.lng ?? 0.0;
+
+                        // Update state
+                        appState.changeRequestedDestination(
+                          reqDestination: prediction.description ?? '',
+                          lat: lat,
+                          lng: lng,
+                        );
+                        appState.updateDestination(
+                            destination: prediction.description ?? '');
+                        appState.setPickCoordinates(
+                            coordinates: LatLng(lat, lng));
+                        appState.changePickupLocationAddress(
+                            address: prediction.description ?? '');
+                      }
                     },
                     textInputAction: TextInputAction.go,
                     controller: appState.pickupLocationControlelr,
                     cursorColor: Colors.blue.shade900,
-                    decoration: InputDecoration(
-                      icon: Container(
-                        margin: EdgeInsets.only(left: 20, bottom: 15),
-                        width: 10,
-                        height: 10,
-                        child: Icon(
-                          Icons.location_on,
-                          color: primary,
-                        ),
+                    decoration: const InputDecoration(
+                      icon: Padding(
+                        padding: EdgeInsets.only(left: 20, bottom: 15),
+                        child: Icon(Icons.location_on, color: primary),
                       ),
                       hintText: "Pick up location",
                       hintStyle: TextStyle(
-                          color: black,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold),
+                        color: black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.all(15),
                     ),
@@ -114,19 +129,23 @@ class PickupSelectionWidget extends StatelessWidget {
                 width: double.infinity,
                 height: 48,
                 child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: 15.0,
-                    right: 15.0,
-                  ),
-                  child: RaisedButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                  child: ElevatedButton(
                     onPressed: () async {
-                      await appState.sendRequest();
+                      await appState.sendRequest(
+                          origin: appState.pickupCoordinates,
+                          destination: appState.destinationCoordinates);
                       appState.changeWidgetShowed(
                           showWidget: Show.PAYMENT_METHOD_SELECTION);
                     },
-                    color: black,
-                    child: Text(
-                      "Comfirm Pickup",
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      "Confirm Pickup",
                       style: TextStyle(color: white, fontSize: 16),
                     ),
                   ),

@@ -1,5 +1,3 @@
-import 'package:flutter/cupertino.dart';
-
 class RouteModel {
   final String points;
   final Distance distance;
@@ -7,32 +5,35 @@ class RouteModel {
   final String startAddress;
   final String endAddress;
 
-  RouteModel(
-      {@required this.points,
-      @required this.distance,
-      @required this.timeNeeded,
-      @required this.startAddress,
-      @required this.endAddress});
+  RouteModel({
+    required this.points,
+    required this.distance,
+    required this.timeNeeded,
+    required this.startAddress,
+    required this.endAddress,
+  });
 }
 
 class Distance {
-  String text;
-  int value;
+  final String text;
+  final int value;
 
-  Distance.fromMap(Map data) {
-    text = data["text"];
-    value = data["value"];
-  }
+  Distance({required this.text, required this.value});
 
-  Map toJson() => {"text": text, "value": value};
+  Distance.fromMap(Map data)
+      : text = data["text"] ?? '', // Default to empty string if null
+        value = data["value"] ?? 0; // Default to 0 if null
+
+  Map<String, dynamic> toJson() => {"text": text, "value": value};
 }
 
 class TimeNeeded {
-  String text;
-  int value;
+  final String text;
+  final int value;
 
-  TimeNeeded.fromMap(Map data) {
-    text = data["text"];
-    value = data["value"];
-  }
+  TimeNeeded({required this.text, required this.value});
+
+  TimeNeeded.fromMap(Map data)
+      : text = data["text"] ?? '', // Default to empty string if null
+        value = data["value"] ?? 0; // Default to 0 if null
 }

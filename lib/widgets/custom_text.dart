@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../helpers/style.dart';
 
 class CustomText extends StatelessWidget {
@@ -6,15 +7,25 @@ class CustomText extends StatelessWidget {
   final double size;
   final Color color;
   final FontWeight weight;
-  
-  // name constructor that has a positional parameters with the text required
-  // and the other parameters optional
-  CustomText({@required this.text, this.size,this.color,this.weight});
+
+  // Named constructor with required `text` and default values for other parameters
+  const CustomText({
+    Key? key,
+    required this.text,
+    this.size = 16.0, // Default font size
+    this.color = black, // Default color from your style file
+    this.weight = FontWeight.normal, // Default weight
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Text(
-      text,style: TextStyle(fontSize: size ?? 16, color: color ?? black, fontWeight: weight ?? FontWeight.normal),
+      text,
+      style: TextStyle(
+        fontSize: size,
+        color: color,
+        fontWeight: weight,
+      ),
     );
   }
 }

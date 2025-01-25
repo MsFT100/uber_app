@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:txapita/helpers/screen_navigation.dart';
-import 'package:txapita/helpers/style.dart';
-import 'package:txapita/providers/app_state.dart';
-import 'package:txapita/providers/user.dart';
-import 'package:txapita/widgets/custom_text.dart';
-import 'package:txapita/widgets/loading.dart';
 
+import '../helpers/screen_navigation.dart';
+import '../helpers/style.dart';
+import '../providers/app_state.dart';
+import '../providers/user.dart';
+import '../widgets/custom_text.dart';
+import '../widgets/loading.dart';
 import 'home.dart';
 import 'login.dart';
 
@@ -16,7 +16,7 @@ class RegistrationScreen extends StatefulWidget {
 }
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
-  final _key = GlobalKey<ScaffoldState>();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
@@ -24,157 +24,162 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     AppStateProvider app = Provider.of<AppStateProvider>(context);
 
     return Scaffold(
-      key: _key,
+      key: _scaffoldKey,
       backgroundColor: Colors.deepOrange,
-      body: authProvider.status == Status.Authenticating? Loading() : SingleChildScrollView(
-        child: Column(
-          children: <Widget>[
-            Container(
-              color: white,
-              height: 100,
-            ),
-
-            Container(
-              color: white,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: authProvider.status == Status.Authenticating
+          ? Loading()
+          : SingleChildScrollView(
+              child: Column(
                 children: <Widget>[
-                  Image.asset("images/lg.png", width: 230, height: 120,),
-                ],
-              ),
-            ),
-
-            Container(
-              height: 40,
-              color: white,
-            ),
-            SizedBox(
-              height: 20,
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Container(
-                decoration: BoxDecoration(
-                    border: Border.all(color: white),
-                    borderRadius: BorderRadius.circular(5)
-                ),
-                child: Padding(padding: EdgeInsets.only(left: 10),
-                  child: TextFormField(
-                    controller: authProvider.name,
-                    decoration: InputDecoration(
-                        hintStyle: TextStyle(color: white),
-                        border: InputBorder.none,
-                        labelStyle: TextStyle(color: white),
-                        labelText: "Name",
-                        hintText: "eg: Santos Enoque",
-                        icon: Icon(Icons.person, color: white,)
-                    ),
-                  ),),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Container(
-                decoration: BoxDecoration(
-                    border: Border.all(color: white),
-                    borderRadius: BorderRadius.circular(5)
-                ),
-                child: Padding(padding: EdgeInsets.only(left: 10),
-                  child: TextFormField(
-                    controller: authProvider.email,
-                    decoration: InputDecoration(
-                        hintStyle: TextStyle(color: white),
-                        border: InputBorder.none,
-                        labelStyle: TextStyle(color: white),
-                        labelText: "Email",
-                        hintText: "santos@enoque.com",
-                        icon: Icon(Icons.email, color: white,)
-                    ),
-                  ),),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Container(
-                decoration: BoxDecoration(
-                    border: Border.all(color: white),
-                    borderRadius: BorderRadius.circular(5)
-                ),
-                child: Padding(padding: EdgeInsets.only(left: 10),
-                  child: TextFormField(
-                    controller: authProvider.phone,
-                    decoration: InputDecoration(
-                        hintStyle: TextStyle(color: white),
-                        border: InputBorder.none,
-                        labelStyle: TextStyle(color: white),
-                        labelText: "Phone",
-                        hintText: "+91 3213452",
-                        icon: Icon(Icons.phone, color: white,)
-                    ),
-                  ),),
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Container(
-                decoration: BoxDecoration(
-                    border: Border.all(color: white),
-                    borderRadius: BorderRadius.circular(5)
-                ),
-                child: Padding(padding: EdgeInsets.only(left: 10),
-                  child: TextFormField(
-                    controller: authProvider.password,
-                    decoration: InputDecoration(
-                        hintStyle: TextStyle(color: white),
-                        border: InputBorder.none,
-                        labelStyle: TextStyle(color: white),
-                        labelText: "Password",
-                        hintText: "at least 6 digits",
-                        icon: Icon(Icons.lock, color: white,)
-                    ),
-                  ),),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: GestureDetector(
-                onTap: ()async{
-                  if(!await authProvider.signUp()){
-                    _key.currentState.showSnackBar(
-                        SnackBar(content: Text("Registration failed!"))
-                    );
-                    return;
-                  }
-                  authProvider.clearController();
-                  changeScreenReplacement(context, MyHomePage());
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                      color: black,
-                      borderRadius: BorderRadius.circular(5)
+                  Container(
+                    color: white,
+                    height: 100,
                   ),
-                  child: Padding(padding: EdgeInsets.only(top: 10, bottom: 10),
+                  Container(
+                    color: white,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        CustomText(text: "Register", color: white, size: 22,)
+                        Image.asset(
+                          "images/lg.png",
+                          width: 230,
+                          height: 120,
+                        ),
                       ],
-                    ),),
-                ),
-              ),
-            ),
+                    ),
+                  ),
+                  Container(
+                    height: 40,
+                    color: white,
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  // Name Input
+                  buildInputField(
+                    controller: authProvider.name,
+                    label: "Name",
+                    hintText: "e.g., John Doe",
+                    icon: Icons.person,
+                  ),
+                  // Email Input
+                  buildInputField(
+                    controller: authProvider.email,
+                    label: "Email",
+                    hintText: "e.g., john.doe@example.com",
+                    icon: Icons.email,
+                  ),
+                  // Phone Input
+                  buildInputField(
+                    controller: authProvider.phone,
+                    label: "Phone",
+                    hintText: "+91 1234567890",
+                    icon: Icons.phone,
+                  ),
+                  // Password Input
+                  buildInputField(
+                    controller: authProvider.password,
+                    label: "Password",
+                    hintText: "At least 6 characters",
+                    icon: Icons.lock,
+                  ),
+                  // Register Button
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: GestureDetector(
+                      onTap: () async {
+                        if (!await authProvider.signUp()) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Registration failed!")),
+                          );
+                          return;
+                        }
+                        // Clear text fields manually
+                        authProvider.name.clear();
+                        authProvider.email.clear();
+                        authProvider.phone.clear();
+                        authProvider.password.clear();
 
-            GestureDetector(
-              onTap: (){
-                changeScreen(context, LoginScreen());
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  CustomText(text: "Login here", size: 20,),
+                        changeScreenReplacement(
+                          context,
+                          MyHomePage(
+                            title: '',
+                          ),
+                        );
+                      },
+                      child: buildButton("Register"),
+                    ),
+                  ),
+                  // Login Redirect
+                  GestureDetector(
+                    onTap: () {
+                      changeScreen(context, LoginScreen());
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        CustomText(
+                          text: "Login here",
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
+            ),
+    );
+  }
+
+  Widget buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required String hintText,
+    required IconData icon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: white),
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: Padding(
+          padding: EdgeInsets.only(left: 10),
+          child: TextFormField(
+            controller: controller,
+            decoration: InputDecoration(
+              hintStyle: TextStyle(color: white),
+              border: InputBorder.none,
+              labelStyle: TextStyle(color: white),
+              labelText: label,
+              hintText: hintText,
+              icon: Icon(
+                icon,
+                color: white,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildButton(String text) {
+    return Container(
+      decoration: BoxDecoration(
+        color: black,
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(top: 10, bottom: 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            CustomText(
+              text: text,
+              color: white,
+              size: 22,
             ),
           ],
         ),

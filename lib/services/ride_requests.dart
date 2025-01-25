@@ -1,18 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:txapita/helpers/constants.dart';
 
 class RideRequestServices {
-  String collection = "requests";
+  final String collection = "requests";
+  final FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
 
   void createRideRequest({
-    String id,
-    String userId,
-    String username,
-    Map<String, dynamic> destination,
-    Map<String, dynamic> position,
-    Map distance,
+    required String id,
+    required String userId,
+    required String username,
+    required Map<String, dynamic> destination,
+    required Map<String, dynamic> position,
+    required Map<String, dynamic> distance,
   }) {
-    firebaseFiretore.collection(collection).document(id).setData({
+    _firebaseFirestore.collection(collection).doc(id).set({
       "username": username,
       "id": id,
       "userId": userId,
@@ -20,19 +20,15 @@ class RideRequestServices {
       "position": position,
       "status": 'pending',
       "destination": destination,
-      "distance": distance
+      "distance": distance,
     });
   }
 
   void updateRequest(Map<String, dynamic> values) {
-    firebaseFiretore
-        .collection(collection)
-        .document(values['id'])
-        .updateData(values);
+    _firebaseFirestore.collection(collection).doc(values['id']).update(values);
   }
 
   Stream<QuerySnapshot> requestStream() {
-    CollectionReference reference = Firestore.instance.collection(collection);
-    return reference.snapshots();
+    return _firebaseFirestore.collection(collection).snapshots();
   }
 }

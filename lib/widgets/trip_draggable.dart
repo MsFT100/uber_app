@@ -1,20 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_google_places/flutter_google_places.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_maps_webservice/places.dart';
-import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:provider/provider.dart';
-import 'package:txapita/helpers/constants.dart';
-import 'package:txapita/helpers/style.dart';
-import 'package:txapita/locators/service_locator.dart';
-import 'package:txapita/providers/app_state.dart';
-import 'package:txapita/providers/user.dart';
-import 'package:txapita/services/call_sms.dart';
 
 import '../helpers/style.dart';
-import '../helpers/style.dart';
-import '../helpers/style.dart';
+import '../locators/service_locator.dart';
+import '../providers/app_state.dart';
+import '../services/call_sms.dart';
 import 'custom_text.dart';
 
 class TripWidget extends StatelessWidget {
@@ -30,7 +20,8 @@ class TripWidget extends StatelessWidget {
         maxChildSize: 0.8,
         builder: (BuildContext context, myscrollController) {
           return Container(
-            decoration: BoxDecoration(color: white,
+            decoration: BoxDecoration(
+                color: white,
 //                        borderRadius: BorderRadius.only(
 //                            topLeft: Radius.circular(20),
 //                            topRight: Radius.circular(20)),
@@ -50,40 +41,44 @@ class TripWidget extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                        child:  CustomText(
-                          text:
-                          'ON TRIP',
-                          weight: FontWeight.bold,
-                          color: green,
-                        )
-                    ),
+                        child: CustomText(
+                      text: 'ON TRIP',
+                      weight: FontWeight.bold,
+                      color: green,
+                    )),
                   ],
                 ),
                 Divider(),
                 ListTile(
                   leading: Container(
-                    child:appState.driverModel?.phone  == null ? CircleAvatar(
-                      radius: 30,
-                      child: Icon(Icons.person_outline, size: 25,),
-                    ) : CircleAvatar(
-                      radius: 30,
-                      backgroundImage: NetworkImage(appState.driverModel?.photo),
-                    ),
+                    child: appState.driverModel?.phone == null
+                        ? CircleAvatar(
+                            radius: 30,
+                            child: Icon(
+                              Icons.person_outline,
+                              size: 25,
+                            ),
+                          )
+                        : CircleAvatar(
+                            radius: 30,
+                            backgroundImage:
+                                NetworkImage(appState.driverModel!.photo),
+                          ),
                   ),
                   title: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       RichText(
                           text: TextSpan(children: [
-                            TextSpan(
-                                text: appState.driverModel.name + "\n",
-                                style: TextStyle(
-                                    fontSize: 17, fontWeight: FontWeight.bold)),
-                            TextSpan(
-                                text: appState.driverModel.car,
-                                style: TextStyle(
-                                    fontSize: 14, fontWeight: FontWeight.w300)),
-                          ], style: TextStyle(color: black))),
+                        TextSpan(
+                            text: appState.driverModel.name + "\n",
+                            style: TextStyle(
+                                fontSize: 17, fontWeight: FontWeight.bold)),
+                        TextSpan(
+                            text: appState.driverModel.car,
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w300)),
+                      ], style: TextStyle(color: black))),
                     ],
                   ),
 //                  subtitle: RaisedButton(
@@ -98,9 +93,11 @@ class TripWidget extends StatelessWidget {
                           color: Colors.red,
                           borderRadius: BorderRadius.circular(30)),
                       child: IconButton(
-                        onPressed: () {
-                        },
-                        icon: Icon(Icons.info, color: white,),
+                        onPressed: () {},
+                        icon: Icon(
+                          Icons.info,
+                          color: white,
+                        ),
                       )),
                 ),
                 Divider(),
@@ -143,23 +140,23 @@ class TripWidget extends StatelessWidget {
                     ),
                     RichText(
                         text: TextSpan(children: [
-                          TextSpan(
-                              text: "\nPick up location \n",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16)),
-                          TextSpan(
-                              text: "25th avenue, flutter street \n\n\n",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w300, fontSize: 16)),
-                          TextSpan(
-                              text: "Destination \n",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16)),
-                          TextSpan(
-                              text: "25th avenue, flutter street \n",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w300, fontSize: 16)),
-                        ], style: TextStyle(color: black))),
+                      TextSpan(
+                          text: "\nPick up location \n",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      TextSpan(
+                          text: "25th avenue, flutter street \n\n\n",
+                          style: TextStyle(
+                              fontWeight: FontWeight.w300, fontSize: 16)),
+                      TextSpan(
+                          text: "Destination \n",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      TextSpan(
+                          text: "25th avenue, flutter street \n",
+                          style: TextStyle(
+                              fontWeight: FontWeight.w300, fontSize: 16)),
+                    ], style: TextStyle(color: black))),
                   ],
                 ),
                 Divider(),
@@ -185,16 +182,17 @@ class TripWidget extends StatelessWidget {
                   ],
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: RaisedButton(
-                    onPressed: () {},
-                    color: red,
-                    child: CustomText(
-                      text: "END MY TRIP",
-                      color: white,
-                    ),
-                  ),
-                )
+                    padding: const EdgeInsets.all(12),
+                    child: ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: red, // Use your 'red' color here
+                      ),
+                      child: CustomText(
+                        text: "END MY TRIP",
+                        color: white,
+                      ),
+                    )),
               ],
             ),
           );

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class UserModel{
+class UserModel {
   static const ID = "id";
   static const NAME = "name";
   static const EMAIL = "email";
@@ -10,19 +10,17 @@ class UserModel{
   static const RATING = "rating";
   static const TOKEN = "token";
 
+  late final String _id;
+  late final String _name;
+  late final String _email;
+  late final String _phone;
+  late final String _token;
 
+  late final int _votes;
+  late final int _trips;
+  late final double _rating;
 
-  String _id;
-  String _name;
-  String _email;
-  String _phone;
-  String _token;
-
-  int _votes;
-  int _trips;
-  double _rating;
-
-//  getters
+  // Getters
   String get name => _name;
   String get email => _email;
   String get id => _id;
@@ -33,18 +31,17 @@ class UserModel{
   int get trips => _trips;
   double get rating => _rating;
 
-  UserModel.fromSnapshot(DocumentSnapshot snapshot){
-    _name = snapshot.data[NAME];
-      _email = snapshot.data[EMAIL];
-    _id = snapshot.data[ID];
-    _token = snapshot.data[TOKEN];
+  // Constructor from snapshot
+  UserModel.fromSnapshot(DocumentSnapshot snapshot) {
+    final data = snapshot.data() as Map<String, dynamic>?; // Cast to Map
+    _name = data?[NAME] ?? ''; // Default to an empty string
+    _email = data?[EMAIL] ?? '';
+    _id = data?[ID] ?? '';
+    _token = data?[TOKEN] ?? '';
 
-    _phone = snapshot.data[PHONE];
-    _votes = snapshot.data[VOTES];
-    _trips = snapshot.data[TRIPS];
-    _rating = snapshot.data[RATING];
-
-
+    _phone = data?[PHONE] ?? '';
+    _votes = data?[VOTES] ?? 0; // Default to 0
+    _trips = data?[TRIPS] ?? 0;
+    _rating = (data?[RATING] ?? 0).toDouble(); // Ensure it's double
   }
-
 }

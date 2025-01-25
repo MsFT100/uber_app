@@ -1,43 +1,42 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class RideRequestModel{
- static const ID = "id";
- static const USERNAME = "username";
- static const USER_ID = "userId";
- static const DRIVER_ID = "driverId";
- static const STATUS = "status";
- static const POSITION = "position";
- static const DESTINATION = "destination";
+class RideRequestModel {
+  static const String ID = "id";
+  static const String USERNAME = "username";
+  static const String USER_ID = "userId";
+  static const String DRIVER_ID = "driverId";
+  static const String STATUS = "status";
+  static const String POSITION = "position";
+  static const String DESTINATION = "destination";
 
- String _id;
- String _username;
- String _userId;
- String _driverId;
- String _status;
- Map _position;
- Map _destination;
+  // Fields
+  late final String _id;
+  late final String _username;
+  late final String _userId;
+  String? _driverId; // Nullable
+  late final String _status;
+  late final Map _position;
+  late final Map _destination;
 
- String get id => _id;
- String get username => _username;
- String get userId => _userId;
- String get driverId => _driverId;
- String get status => _status;
- Map get position => _position;
- Map get destination => _destination;
+  // Getters
+  String get id => _id;
+  String get username => _username;
+  String get userId => _userId;
+  String? get driverId => _driverId; // Nullable
+  String get status => _status;
+  Map get position => _position;
+  Map get destination => _destination;
 
- RideRequestModel.fromSnapshot(DocumentSnapshot snapshot){
-  _id = snapshot.data[ID];
-  _username = snapshot.data[USERNAME];
-  _userId = snapshot.data[USER_ID];
-  _driverId = snapshot.data[DRIVER_ID];
-  _status = snapshot.data[STATUS];
-  _position = snapshot.data[POSITION];
-  _destination = snapshot.data[DESTINATION];
- }
-
-
-
-
-
-
+  // Constructor for creating the object from Firestore snapshot
+  RideRequestModel.fromSnapshot(DocumentSnapshot snapshot) {
+    final data =
+        snapshot.data() as Map<String, dynamic>?; // Ensure data is not null
+    _id = data?[ID] ?? ''; // Default to empty string if null
+    _username = data?[USERNAME] ?? '';
+    _userId = data?[USER_ID] ?? '';
+    _driverId = data?[DRIVER_ID]; // Nullable
+    _status = data?[STATUS] ?? '';
+    _position = data?[POSITION] ?? {};
+    _destination = data?[DESTINATION] ?? {};
+  }
 }
