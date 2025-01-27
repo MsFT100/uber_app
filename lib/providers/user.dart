@@ -14,10 +14,13 @@ class UserProvider with ChangeNotifier {
   static const LOGGED_IN = "loggedIn";
   static const ID = "id";
 
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   User? _user;
   Status _status = Status.Uninitialized;
   final UserServices _userServices = UserServices();
   UserModel? _userModel;
+  bool _isActiveRememberMe = false;
 
   // Secure storage for sensitive data
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
@@ -26,6 +29,7 @@ class UserProvider with ChangeNotifier {
   UserModel? get userModel => _userModel;
   Status get status => _status;
   User? get user => _user;
+  bool get isActiveRememberMe => _isActiveRememberMe;
 
   // Text controllers for input
   final TextEditingController email = TextEditingController();
@@ -37,14 +41,19 @@ class UserProvider with ChangeNotifier {
     _initialize();
   }
 
+  get isRememberMe => false;
+
   /// Sign-in method
-  Future<bool> signIn() async {
+  Future<String> signIn() async {
     try {
+      if (email.text.trim().isEmpty || password.text.trim().isEmpty) {
+        return "Email and Password cannot be empty.";
+      }
+
       _status = Status.Authenticating;
       notifyListeners();
 
-      UserCredential result =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
+      UserCredential result = await _auth.signInWithEmailAndPassword(
         email: email.text.trim(),
         password: password.text.trim(),
       );
@@ -55,24 +64,41 @@ class UserProvider with ChangeNotifier {
         _userModel = await _userServices.getUserById(_user!.uid);
         _status = Status.Authenticated;
         notifyListeners();
-        return true;
+        return "Success";
+      } else {
+        return "Failed to sign in user.";
+      }
+    } on FirebaseAuthException catch (e) {
+      _status = Status.Unauthenticated;
+      notifyListeners();
+      switch (e.code) {
+        case 'user-not-found':
+          return "No user found for that email.";
+        case 'wrong-password':
+          return "Wrong password provided for the user.";
+        case 'invalid-email':
+          return "The email address is not valid.";
+        default:
+          return e.message ?? "An unknown error occurred.";
       }
     } catch (e) {
       _status = Status.Unauthenticated;
       notifyListeners();
-      debugPrint("SignIn Error: $e");
+      return "An unknown error occurred: $e";
     }
-    return false;
   }
 
   /// Sign-up method
-  Future<bool> signUp() async {
+  Future<String> signUp() async {
     try {
+      if (email.text.trim().isEmpty || password.text.trim().isEmpty) {
+        return "Email and Password cannot be empty.";
+      }
+
       _status = Status.Authenticating;
       notifyListeners();
 
-      UserCredential result =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email.text.trim(),
         password: password.text.trim(),
       );
@@ -90,14 +116,30 @@ class UserProvider with ChangeNotifier {
         _userModel = await _userServices.getUserById(_user!.uid);
         _status = Status.Authenticated;
         notifyListeners();
-        return true;
+        return "Success";
+      } else {
+        return "Failed to create user.";
+      }
+    } on FirebaseAuthException catch (e) {
+      _status = Status.Unauthenticated;
+      notifyListeners();
+      switch (e.code) {
+        case 'email-already-in-use':
+          return "The email address is already in use by another account.";
+        case 'invalid-email':
+          return "The email address is not valid.";
+        case 'weak-password':
+          return "The password provided is too weak.";
+        case 'The supplied auth credential is incorrect, malformed or has expired.':
+          return "Incorrect credentials";
+        default:
+          return e.message ?? "An unknown error occurred.";
       }
     } catch (e) {
       _status = Status.Unauthenticated;
       notifyListeners();
-      debugPrint("SignUp Error: $e");
+      return "An unknown error occurred: $e";
     }
-    return false;
   }
 
   /// Sign-out method
@@ -176,5 +218,14 @@ class UserProvider with ChangeNotifier {
     password.clear();
     name.clear();
     phone.clear();
+  }
+
+  void toggleRememberMe() {
+    _isActiveRememberMe = !_isActiveRememberMe;
+    //update();
+  }
+
+  void setRememberMe() {
+    _isActiveRememberMe = true;
   }
 }

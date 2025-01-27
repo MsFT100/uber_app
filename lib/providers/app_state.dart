@@ -77,7 +77,7 @@ class AppStateProvider with ChangeNotifier {
   Set<Polyline> get poly => _poly;
 
   GoogleMapController get mapController => _mapController;
-  late RouteModel routeModel;
+  RouteModel? routeModel;
 
   //  Driver request related variables
   bool lookingForDriver = false;
@@ -229,7 +229,7 @@ class AppStateProvider with ChangeNotifier {
 
     if (origin == null) {
       ridePrice =
-          double.parse((routeModel.distance.value / 500).toStringAsFixed(2));
+          double.parse((routeModel!.distance.value / 500).toStringAsFixed(2));
     }
     List<Marker> mks = _markers
         .where((element) => element.markerId.value == "location")
@@ -238,7 +238,7 @@ class AppStateProvider with ChangeNotifier {
       _markers.remove(mks[0]);
     }
 // ! another method will be created just to draw the polys and add markers
-    _addLocationMarker(destinationCoordinates, routeModel.distance.text);
+    _addLocationMarker(destinationCoordinates, routeModel!.distance.text);
     _center = destinationCoordinates;
     _createRoute(route.points, color: Colors.deepOrange);
     _createRoute(
@@ -679,7 +679,7 @@ class AppStateProvider with ChangeNotifier {
           sendRequest(
               origin: pickupCoordinates,
               destination: driverModel.getPosition());
-          if (routeModel.distance.value <= 200) {
+          if (routeModel!.distance.value <= 200) {
             driverArrived = true;
           }
           notifyListeners();

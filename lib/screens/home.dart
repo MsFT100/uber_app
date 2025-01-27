@@ -29,7 +29,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   var scaffoldState = GlobalKey<ScaffoldState>();
-
+  final GlobalKey<ScaffoldState> _homeScaffoldKey = GlobalKey<ScaffoldState>();
   @override
   void initState() {
     super.initState();
@@ -52,6 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return SafeArea(
       child: Scaffold(
         key: scaffoldState,
+        //key: _homeScaffoldKey,
         drawer: Drawer(
             child: ListView(
           children: [

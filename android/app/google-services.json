@@ -23,25 +23,6 @@
           "other_platform_oauth_client": []
         }
       }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:95457171066:android:a2d56a0ee4a6859e8b8dc3",
-        "android_client_info": {
-          "package_name": "com.santosenoque.txapita"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAGDlcfxXtt2rmk_GrytWTVRGMHngzdHYM"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
     }
   ],
   "configuration_version": "1"
