@@ -42,7 +42,7 @@ class AppStateProvider with ChangeNotifier {
   static const REQUEST_ACCEPTED_NOTIFICATION = 'REQUEST_ACCEPTED';
   static const TRIP_STARTED_NOTIFICATION = 'TRIP_STARTED';
 
-  Set<Marker> _markers = {};
+  final Set<Marker> _markers = {};
   //  this polys will be displayed on the map
   Set<Polyline> _poly = {};
   // this polys temporarely store the polys to destination
@@ -57,7 +57,7 @@ class AppStateProvider with ChangeNotifier {
   LatLng _lastPosition = _center;
   TextEditingController pickupLocationControlelr = TextEditingController();
   TextEditingController destinationController = TextEditingController();
-  late Position position;
+  late Position current_position;
   DriverService _driverService = DriverService();
   //  draggable to show
   Show show = Show.DESTINATION_SELECTION;
@@ -67,6 +67,7 @@ class AppStateProvider with ChangeNotifier {
 
   //   location pin
   late BitmapDescriptor locationPin;
+  late BitmapDescriptor customMarker;
 
   LatLng get center => _center;
 
@@ -144,25 +145,42 @@ class AppStateProvider with ChangeNotifier {
 
 // ANCHOR: MAPS & LOCATION METHODS
   _updatePosition(Position newPosition) {
-    position = newPosition;
+    current_position = newPosition;
     notifyListeners();
   }
 
   Future<Position> _getUserLocation() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // Get the current position
-    position = await Geolocator.getCurrentPosition();
+    //Check Location Permissions
+    LocationPermission permission = await Geolocator.requestPermission();
+    checkLocationPermission(permission);
 
-    // Fetch the placemark using coordinates
+    // Get the current position
+    current_position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    // Fetch the placemarks using coordinates
     List<Placemark> placemarks = await placemarkFromCoordinates(
-      position.latitude,
-      position.longitude,
+      current_position.latitude,
+      current_position.longitude,
     );
 
     // Check if placemarks are available and extract the isoCountryCode
     String? countryCode =
         placemarks.isNotEmpty ? placemarks[0].isoCountryCode : null;
+    location_global_address =
+        "${placemarks.first.street}, ${placemarks.first.locality}, ${placemarks.first.country}";
+
+    addMarker(
+      Marker(
+        markerId: const MarkerId("user_location"),
+        position: LatLng(current_position.latitude, current_position.longitude),
+        icon: customMarker,
+        infoWindow: const InfoWindow(title: "Me"),
+      ),
+    );
 
     // Save the country code in lowercase if it's not already set
     if (prefs.getString(COUNTRY) == null && countryCode != null) {
@@ -171,13 +189,20 @@ class AppStateProvider with ChangeNotifier {
     }
 
     // Update the center position
-    _center = LatLng(position.latitude, position.longitude);
+    _center = LatLng(current_position.latitude, current_position.longitude);
 
     notifyListeners();
-    return position;
+    return current_position;
   }
 
-  onCreate(GoogleMapController controller) {
+  void checkLocationPermission(LocationPermission permission) {
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      throw Exception("Location permissions are denied");
+    }
+  }
+
+  void onMapCreated(GoogleMapController controller) {
     _mapController = controller;
     notifyListeners();
   }
@@ -358,6 +383,17 @@ class AppStateProvider with ChangeNotifier {
         icon: carPin));
   }
 
+  // Method to add a marker
+  void addMarker(Marker marker) {
+    _markers.add(marker); // Add the marker to the set
+    markers.forEach((marker) {
+      print("Marker ID: ${marker.markerId.value}");
+      print(
+          "Position: ${marker.position.latitude}, ${marker.position.longitude}");
+    });
+    notifyListeners(); // Notify listeners to update the UI
+  }
+
   _updateMarkers(List<DriverModel> drivers) {
 //    this code will ensure that when the driver markers are updated the location marker wont be deleted
     List<Marker> locationMarkers = _markers
@@ -486,7 +522,7 @@ class AppStateProvider with ChangeNotifier {
                         visible: driverModel?.photo == null,
                         child: Container(
                           decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.5),
+                              color: Colors.grey,
                               borderRadius: BorderRadius.circular(40)),
                           child: CircleAvatar(
                             backgroundColor: Colors.transparent,

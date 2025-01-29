@@ -1,116 +1,123 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_google_places_hoc081098/flutter_google_places_hoc081098.dart';
-import 'package:flutter_google_places_hoc081098/google_maps_webservice_places.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:googlemaps_flutter_webservices/places.dart' as th;
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:user_app/helpers/constants.dart';
 
-import '../helpers/constants.dart';
-import '../helpers/style.dart';
 import '../providers/app_state.dart';
 
-class DestinationSelectionWidget extends StatelessWidget {
+class DestinationSelectionWidget extends StatefulWidget {
   const DestinationSelectionWidget({Key? key}) : super(key: key);
+
+  @override
+  State<DestinationSelectionWidget> createState() =>
+      _DestinationSelectionWidgetState();
+}
+
+class _DestinationSelectionWidgetState
+    extends State<DestinationSelectionWidget> {
+  List<th.Prediction> predictions = [];
+  final DraggableScrollableController _draggableController =
+      DraggableScrollableController(); // Controller for sheet
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  Future<void> searchPlaces(String input) async {
+    if (input.isEmpty) {
+      setState(() => predictions = []);
+      return;
+    }
+    print("NQNEIOQIQPIPQPJQOEVHQPIEJVPIQEJVPQJPOQJPVOQJ:" + input);
+    try {
+      final response =
+          await th.GoogleMapsPlaces(apiKey: GOOGLE_MAPS_API_KEY).autocomplete(
+        input,
+        language: 'en',
+        components: [
+          th.Component(th.Component.country, country_global_key),
+        ],
+      );
+
+      setState(() => predictions = response.predictions);
+
+      // Expand sheet when user starts typing
+      _draggableController.animateTo(
+        0.95,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } catch (e) {
+      print("Error fetching predictions: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     AppStateProvider appState = Provider.of<AppStateProvider>(context);
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.28,
-      minChildSize: 0.28,
-      builder: (BuildContext context, ScrollController myScrollController) {
+      controller: _draggableController,
+      initialChildSize: 0.4,
+      minChildSize: 0.4,
+      maxChildSize: 0.95, // Full screen when expanded
+      snapSizes: [0.4, 0.95],
+      snap: true,
+      builder: (context, dragScrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: white,
+            color: Colors.white,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
             ),
             boxShadow: [
               BoxShadow(
-                color: grey.withOpacity(0.8),
+                color: Colors.grey.withOpacity(0.8),
                 offset: const Offset(3, 2),
                 blurRadius: 7,
               ),
             ],
           ),
-          child: ListView(
-            controller: myScrollController,
+          child: Column(
             children: [
-              const Icon(
-                Icons.remove,
-                size: 40,
-                color: grey,
-              ),
+              const Icon(Icons.remove, size: 40, color: Colors.grey),
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: grey.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: TextField(
-                    onTap: () async {
-                      SharedPreferences preferences =
-                          await SharedPreferences.getInstance();
-                      final String? country = preferences.getString(COUNTRY);
-
-                      final Prediction? prediction =
-                          await PlacesAutocomplete.show(
-                        context: context,
-                        apiKey: GOOGLE_MAPS_API_KEY,
-                        mode: Mode.overlay,
-                        components: country != null
-                            ? [Component(Component.country, country)]
-                            : [],
-                      );
-
-                      if (prediction != null) {
-                        PlacesDetailsResponse detail = (await places
-                                .getDetailsByPlaceId(prediction.placeId ?? ''))
-                            as PlacesDetailsResponse;
-                        final double lat =
-                            detail.result.geometry?.location.lat ?? 0.0;
-                        final double lng =
-                            detail.result.geometry?.location.lng ?? 0.0;
-
-                        appState.changeRequestedDestination(
-                          reqDestination: prediction.description ?? '',
-                          lat: lat,
-                          lng: lng,
-                        );
-                        appState.updateDestination(
-                            destination: prediction.description ?? '');
-                        LatLng coordinates = LatLng(lat, lng);
-                        appState.setDestination(coordinates: coordinates);
-                        appState.addPickupMarker(appState.center);
-                        appState.changeWidgetShowed(
-                            showWidget: Show.PICKUP_SELECTION);
-                      }
-                    },
-                    textInputAction: TextInputAction.go,
-                    controller: appState.destinationController,
-                    cursorColor: Colors.blue.shade900,
-                    decoration: const InputDecoration(
-                      icon: Padding(
-                        padding: EdgeInsets.only(left: 20, bottom: 15),
-                        child: Icon(Icons.location_on, color: primary),
-                      ),
-                      hintText: "Where to go?",
-                      hintStyle: TextStyle(
-                        color: black,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.all(15),
+                child: TextField(
+                  onChanged: searchPlaces,
+                  onTap: () => _draggableController.animateTo(0.95,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut), // Expand on tap
+                  textInputAction: TextInputAction.search,
+                  controller: appState.destinationController,
+                  cursorColor: Colors.blue.shade900,
+                  decoration: const InputDecoration(
+                    icon: Padding(
+                      padding: EdgeInsets.only(left: 20, bottom: 15),
+                      child: Icon(Icons.location_on, color: Colors.blue),
                     ),
+                    hintText: "Where to go?",
+                    hintStyle: TextStyle(
+                      color: Colors.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(15),
                   ),
                 ),
               ),
-              ..._buildLocationList(),
+              Expanded(
+                child: ListView(
+                  physics: const ClampingScrollPhysics(),
+                  controller: dragScrollController,
+                  children: _buildLocationList(appState),
+                ),
+              ),
             ],
           ),
         );
@@ -118,38 +125,50 @@ class DestinationSelectionWidget extends StatelessWidget {
     );
   }
 
-  // Helper method to create location list tiles
-  List<Widget> _buildLocationList() {
-    final List<Map<String, dynamic>> locations = [
-      {
-        'icon': Icons.home,
-        'title': "Home",
-        'subtitle': "25th Avenue, 23 Street"
-      },
-      {
-        'icon': Icons.work,
-        'title': "Work",
-        'subtitle': "25th Avenue, 23 Street"
-      },
-      {
-        'icon': Icons.history,
-        'title': "Recent location",
-        'subtitle': "25th Avenue, 23 Street"
-      },
+  List<Widget> _buildLocationList(AppStateProvider appState) {
+    List<Widget> locationList = [
+      const ListTile(
+        leading: Icon(Icons.home, color: Colors.deepOrange),
+        title: Text("Home"),
+        subtitle: Text("25th Avenue, 23 Street"),
+      ),
+      const ListTile(
+        leading: Icon(Icons.work, color: Colors.blue),
+        title: Text("Work"),
+        subtitle: Text("Business Avenue, Downtown"),
+      ),
     ];
 
-    return locations.map((location) {
+    // Append Predictions Below Default Locations
+    locationList.addAll(predictions.map((prediction) {
       return ListTile(
-        leading: CircleAvatar(
-          backgroundColor: location['icon'] == Icons.history
-              ? Colors.grey.withOpacity(0.18)
-              : Colors.deepOrange[300],
-          child: Icon(location['icon'],
-              color: location['icon'] == Icons.history ? primary : white),
-        ),
-        title: Text(location['title']),
-        subtitle: Text(location['subtitle']),
+        leading: const Icon(Icons.location_on, color: Colors.grey),
+        title: Text(prediction.description ?? ''),
+        onTap: () async {
+          final details = await th.GoogleMapsPlaces(apiKey: GOOGLE_MAPS_API_KEY)
+              .getDetailsByPlaceId(prediction.placeId ?? '');
+
+          final double lat = details.result.geometry?.location.lat ?? 0.0;
+          final double lng = details.result.geometry?.location.lng ?? 0.0;
+
+          appState.changeRequestedDestination(
+            reqDestination: prediction.description ?? '',
+            lat: lat,
+            lng: lng,
+          );
+
+          appState.updateDestination(destination: prediction.description ?? '');
+          appState.setDestination(coordinates: LatLng(lat, lng));
+          appState.changeWidgetShowed(showWidget: Show.PICKUP_SELECTION);
+
+          // Clear predictions after selection
+          setState(() {
+            predictions = [];
+          });
+        },
       );
-    }).toList();
+    }));
+
+    return locationList;
   }
 }

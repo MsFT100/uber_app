@@ -4,12 +4,12 @@ import 'package:provider/provider.dart';
 import 'package:user_app/helpers/screen_navigation.dart';
 import 'package:user_app/helpers/style.dart';
 import 'package:user_app/providers/user.dart';
+import 'package:user_app/screens/menu.dart';
 import 'package:user_app/screens/registration.dart';
 import 'package:user_app/utils/app_constants.dart';
 import 'package:user_app/widgets/loading.dart';
 
 import '../utils/images.dart';
-import 'home.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -17,7 +17,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _key = GlobalKey<ScaffoldState>();
+  final GlobalKey<ScaffoldState> _loginScaffoldKey = GlobalKey<ScaffoldState>();
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
   final phoneNode = FocusNode();
@@ -28,9 +28,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<UserProvider>(context);
 
     return Scaffold(
-      key: _key,
-      //backgroundColor: Theme.of(context).canvasColor,
-      backgroundColor: Color(0xFFB8860B),
+      key: _loginScaffoldKey,
+      backgroundColor: AppConstants.lightPrimary,
+      //backgroundColor: A,
       body: authProvider.status == Status.Authenticating
           ? Loading()
           : SafeArea(
@@ -49,10 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                '${'welcome to'.tr} ' + AppConstants.appName,
+                                '${'Welcome to'.tr} ' + AppConstants.appName,
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).primaryColor,
+                                  color: Theme.of(context).primaryColorLight,
                                   fontSize: 24.0,
                                 ),
                               ),
@@ -63,10 +63,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       SizedBox(
                           height: MediaQuery.of(context).size.height * 0.06),
                       Text(
-                        'log in'.tr,
+                        'Log in'.tr,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor,
+                          color: Theme.of(context).primaryColorLight,
                           fontSize: 32.0,
                         ),
                       ),
@@ -130,29 +130,28 @@ class _LoginScreenState extends State<LoginScreen> {
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: InkWell(
-                              onTap: () => authProvider.toggleRememberMe(),
+                              onTap: () => authProvider
+                                  .toggleRememberMe(), // Makes entire row clickable
                               child: Row(
                                 children: [
-                                  SizedBox(
-                                    width: 20.0,
-                                    child: Checkbox(
-                                      checkColor:
-                                          Theme.of(context).primaryColor,
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(5)),
-                                      activeColor: Theme.of(context)
-                                          .primaryColor
-                                          .withOpacity(.125),
-                                      value: authProvider.isRememberMe,
-                                      onChanged: (bool? isChecked) =>
-                                          authProvider.toggleRememberMe(),
+                                  Checkbox(
+                                    checkColor: Theme.of(context).primaryColor,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(5),
                                     ),
+                                    activeColor: Theme.of(context).primaryColor,
+                                    value: authProvider.isRememberMe,
+                                    onChanged: (bool? isChecked) =>
+                                        authProvider.toggleRememberMe(),
                                   ),
                                   const SizedBox(width: 8.0),
-                                  Text(
-                                    'remember me'.tr,
-                                    style: TextStyle(fontSize: 14.0),
+                                  GestureDetector(
+                                    onTap: () => authProvider
+                                        .toggleRememberMe(), // Text is also clickable
+                                    child: Text(
+                                      'remember me'.tr,
+                                      style: TextStyle(fontSize: 14.0),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -196,8 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   authProvider.clearController();
                                   changeScreenReplacement(
                                       context,
-                                      MyHomePage(
-                                        key: _key,
+                                      Menu(
                                         title: 'Home',
                                       ));
                                 },

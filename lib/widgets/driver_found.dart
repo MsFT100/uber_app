@@ -51,10 +51,10 @@ class DriverFoundWidget extends StatelessWidget {
               ListTile(
                 leading: CircleAvatar(
                   radius: 30,
-                  backgroundImage: appState.driverModel?.photo != null
-                      ? NetworkImage(appState.driverModel!.photo!)
+                  backgroundImage: appState.driverModel.photo != null
+                      ? NetworkImage(appState.driverModel.photo)
                       : null,
-                  child: appState.driverModel?.photo == null
+                  child: appState.driverModel.photo == null
                       ? const Icon(Icons.person_outline, size: 25)
                       : null,
                 ),
@@ -70,7 +70,7 @@ class DriverFoundWidget extends StatelessWidget {
                           ),
                         ),
                         TextSpan(
-                          text: appState.driverModel?.car ?? 'Car info',
+                          text: appState.driverModel.car ?? 'Car info',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w300,
@@ -98,7 +98,7 @@ class DriverFoundWidget extends StatelessWidget {
                   ),
                   child: IconButton(
                     onPressed: () {
-                      final phone = appState.driverModel?.phone;
+                      final phone = appState.driverModel.phone;
                       if (phone != null) {
                         _service.call(phone);
                       }

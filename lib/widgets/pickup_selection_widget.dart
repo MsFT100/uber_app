@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_google_places_hoc081098/flutter_google_places_hoc081098.dart';
-import 'package:flutter_google_places_hoc081098/src/google_maps_webservice/places.dart'
-    as hoc081098_places;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:googlemaps_flutter_webservices/places.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,6 +8,7 @@ import '../helpers/constants.dart';
 import '../helpers/style.dart';
 import '../providers/app_state.dart';
 import '../providers/user.dart';
+import '../utils/app_constants.dart';
 import 'custom_text.dart';
 
 class PickupSelectionWidget extends StatelessWidget {
@@ -67,26 +66,19 @@ class PickupSelectionWidget extends StatelessWidget {
                           await SharedPreferences.getInstance();
                       final String? country = preferences.getString(COUNTRY);
 
-                      // Launch Places Autocomplete
-                      final hoc081098_places.Prediction? prediction =
-                          await PlacesAutocomplete.show(
-                        context: context,
-                        apiKey: GOOGLE_MAPS_API_KEY,
-                        mode: Mode.overlay,
-                        components: country != null
-                            ? [
-                                hoc081098_places.Component(
-                                    hoc081098_places.Component.country, country)
-                              ]
-                            : [],
+                      final prediction = await showSearchDialog(
+                        context,
+                        country,
                       );
 
                       if (prediction != null) {
                         // Fetch place details
-                        final hoc081098_places.PlacesDetailsResponse detail =
-                            await hoc081098_places.GoogleMapsPlaces(
+                        final GoogleMapsPlaces _places = GoogleMapsPlaces(
                           apiKey: GOOGLE_MAPS_API_KEY,
-                        ).getDetailsByPlaceId(prediction.placeId ?? '');
+                        );
+
+                        final PlacesDetailsResponse detail = await _places
+                            .getDetailsByPlaceId(prediction.placeId ?? '');
 
                         final lat = detail.result.geometry?.location.lat ?? 0.0;
                         final lng = detail.result.geometry?.location.lng ?? 0.0;
@@ -157,4 +149,36 @@ class PickupSelectionWidget extends StatelessWidget {
       },
     );
   }
+}
+
+Future<Prediction?> showSearchDialog(
+    BuildContext context, String? country) async {
+  final response =
+      await GoogleMapsPlaces(apiKey: AppConstants.GOOGLE_MAPS_API_KEY)
+          .autocomplete(
+    '',
+    language: 'en',
+    components: country != null ? [Component(Component.country, country)] : [],
+  );
+
+  // Show search results and allow the user to select a prediction
+  final prediction = await showDialog<Prediction>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Select a location"),
+        content: ListView.builder(
+          itemCount: response.predictions.length,
+          itemBuilder: (context, index) {
+            final prediction = response.predictions[index];
+            return ListTile(
+              title: Text(prediction.description ?? ''),
+              onTap: () => Navigator.pop(context, prediction),
+            );
+          },
+        ),
+      );
+    },
+  );
+  return prediction;
 }

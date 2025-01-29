@@ -11,20 +11,22 @@ dependencies:
 
   cloud_firestore: 5.6.2
   cupertino_icons: ^1.0.5
-  connectivity_plus: ^3.0.5
+  connectivity_plus: ^6.1.2
+  carousel_slider: ^5.0.0
   firebase_auth: 5.4.1
   firebase_core: ^3.2.0
   firebase_messaging: ^15.0.3
   firebase_crashlytics: ^4.0.3
   flutter_google_places_sdk: ^0.3.2+1
   flutter_spinkit: ^5.2.1
-  flutter_google_places_hoc081098: ^2.0.0
 
-  geolocator: ^12.0.0
+
+  geolocator: ^13.0.2
   geoflutterfire_plus: ^0.0.32
   google_maps_flutter: ^2.3.2
   googlemaps_flutter_webservices: ^1.0.2
-  geocoding: ^2.0.0
+
+  geocoding: ^3.0.0
   get: ^4.6.6
 
 
@@ -37,12 +39,14 @@ dependencies:
   url_launcher: ^6.1.10
   get_it: 8.0.3
   flutter_secure_storage: ^9.2.4
-
+  flutter_launcher_icons: ^0.14.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   change_app_package_name: ^1.4.0
+  flutter_launcher_icons: ^0.14.3 #flutter pub run flutter_launcher_icons:main
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec
@@ -85,3 +89,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.io/custom-fonts/#from-packages
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/image/lg.png"

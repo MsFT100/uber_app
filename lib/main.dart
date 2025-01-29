@@ -36,7 +36,7 @@ void main() async {
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.system,
       theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
+      darkTheme: ThemeData.light(),
       home: MyApp(),
     ),
   ));

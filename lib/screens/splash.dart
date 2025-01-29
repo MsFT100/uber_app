@@ -4,12 +4,12 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+import 'package:user_app/screens/menu.dart';
 import 'package:user_app/utils/images.dart';
 
 import '../providers/user.dart';
 import '../utils/app_constants.dart';
 import '../widgets/loading.dart';
-import 'home.dart';
 import 'login.dart';
 
 class Splash extends StatefulWidget {
@@ -20,7 +20,9 @@ class Splash extends StatefulWidget {
 }
 
 class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
-  StreamSubscription<ConnectivityResult?>? _onConnectivityChanged;
+  late StreamSubscription<List<ConnectivityResult>> _onConnectivityChanged;
+  bool isConnected = false;
+  bool isFirst = true;
 
   late AnimationController _controller;
   late Animation _animation;
@@ -53,41 +55,44 @@ class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
   }
 
   void _checkConnectivity() {
-    bool isFirst = true;
     _onConnectivityChanged = Connectivity()
         .onConnectivityChanged
-        .listen((ConnectivityResult result) {
-      bool isConnected = result == ConnectivityResult.wifi ||
-          result == ConnectivityResult.mobile;
-      if ((isFirst && !isConnected) || !isFirst && context.mounted) {
-        ScaffoldMessenger.of(Get.context!).removeCurrentSnackBar();
-        ScaffoldMessenger.of(Get.context!).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        .listen((List<ConnectivityResult> result) {
+      isConnected = result.contains(ConnectivityResult.mobile) ||
+          result.contains(ConnectivityResult.wifi);
+
+      // Remove existing SnackBar
+      ScaffoldMessenger.of(Get.context!).removeCurrentSnackBar();
+      ScaffoldMessenger.of(Get.context!).hideCurrentSnackBar();
+
+      // Show updated SnackBar
+      ScaffoldMessenger.of(Get.context!).showSnackBar(
+        SnackBar(
           backgroundColor: isConnected ? Colors.green : Colors.red,
           duration: Duration(seconds: isConnected ? 3 : 6000),
           content: Text(
             isConnected ? 'connected'.tr : 'no_connection'.tr,
             textAlign: TextAlign.center,
           ),
-        ));
+        ),
+      );
 
-        if (isConnected) {
-          _route();
-        }
+      if (isConnected) {
+        _route();
       }
+
       isFirst = false;
     });
   }
 
   void _route() async {
     UserProvider auth = Provider.of<UserProvider>(context, listen: false);
-
-    await Future.delayed(Duration(seconds: 10)); // add delay for splash
+    await Future.delayed(Duration(seconds: 5)); // add delay for splash
 
     if (auth.status == Status.Authenticated) {
       // Navigate to Home if authenticated
-      Navigator.of(context).pushReplacement(MaterialPageRoute(
-          builder: (_) => MyHomePage(title: AppConstants.appName)));
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => Menu(title: AppConstants.appName)));
     } else {
       // Navigate to Login if not authenticated
       Navigator.of(context)
@@ -99,7 +104,7 @@ class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(color: Theme.of(context).primaryColorDark),
+        decoration: BoxDecoration(color: AppConstants.lightPrimary),
         alignment: Alignment.bottomCenter,
         child: Column(
           mainAxisSize: MainAxisSize.min,

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AppConstants {
-  static const String appName = 'Flutter Taxi';
+  static const String appName = 'Bucoride';
   static const String baseUrl = 'https://drivemond-admin.codemond.com';
   static const String appVersion = '1.0';
-  static const Color lightPrimary = Color(0xFFB8860B);
+  static const Color lightPrimary = Color(0xFFE8A80B);
   static const Color darkPrimary = Color(0xFF006064);
   static const String fontFamily = 'SFProText';
   static const double coverageRadiusInMeter = 50;
@@ -138,7 +138,7 @@ class AppConstants {
 
   static const int limitOfPickedIdentityImageNumber = 2;
   static const double limitOfPickedImageSizeInMB = 2;
-
+  static const GOOGLE_MAPS_API_KEY = "AIzaSyBqD2lxHfrvXS6DszBaG1w-dHAXnArbbPE";
   //static List<OnBoardingModel> onBoardPagerData = [
   //  OnBoardingModel(title: 'on_boarding_1_title'.tr, image: 'assets/image/on_board_one.png'),
   //  OnBoardingModel(title: 'on_boarding_2_title'.tr, image: 'assets/image/on_board_two.png'),

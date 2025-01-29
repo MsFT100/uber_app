@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
-import '../helpers/style.dart';
 
 class Loading extends StatelessWidget {
   @override
@@ -9,7 +8,7 @@ class Loading extends StatelessWidget {
     return Container(
         color: Colors.transparent,
         child: SpinKitFadingCircle(
-          color: black,
+          color: Colors.blueAccent,
           size: 50,
         ));
   }
