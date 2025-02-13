@@ -9,12 +9,14 @@ class UserModel {
   static const TRIPS = "trips";
   static const RATING = "rating";
   static const TOKEN = "token";
+  static const PHOTO = "photo";
 
   late final String _id;
   late final String _name;
   late final String _email;
   late final String _phone;
   late final String _token;
+  late final String _photoURL;
 
   late final int _votes;
   late final int _trips;
@@ -27,9 +29,38 @@ class UserModel {
   String get token => _token;
 
   String get phone => _phone;
+  String get photoURL => _photoURL;
   int get votes => _votes;
   int get trips => _trips;
   double get rating => _rating;
+
+  // Add a setter for photoURL
+  set photoURL(String url) {
+    _photoURL = url;
+  }
+
+  toJson() {
+    return {
+      "name": _name,
+      "email": _email,
+      "phone": _phone,
+      "trips": _trips,
+      "rating": _rating,
+      "photoURL": _photoURL,
+    };
+  }
+
+  UserModel({
+    required String name,
+    required String phoneNumber,
+  })  : _name = name,
+        _phone = phoneNumber,
+        _email = '',
+        _id = '',
+        _token = '',
+        _votes = 0,
+        _trips = 0,
+        _rating = 0.0;
 
   // Constructor from snapshot
   UserModel.fromSnapshot(DocumentSnapshot snapshot) {
@@ -38,6 +69,7 @@ class UserModel {
     _email = data?[EMAIL] ?? '';
     _id = data?[ID] ?? '';
     _token = data?[TOKEN] ?? '';
+    _photoURL = data?[PHOTO] ?? '';
 
     _phone = data?[PHONE] ?? '';
     _votes = data?[VOTES] ?? 0; // Default to 0

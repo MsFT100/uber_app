@@ -9,7 +9,7 @@ FirebaseMessaging fcm =
     FirebaseMessaging.instance; // Updated FirebaseMessaging initialization
 GoogleMapsPlaces places = GoogleMapsPlaces(apiKey: GOOGLE_MAPS_API_KEY);
 const user_global_location = null;
-String? location_global_address = "Kenya";
+String? location_global_address = "Ke";
 
 String country_global_key = "Kenya";
 int selectedNavIndex = 0;

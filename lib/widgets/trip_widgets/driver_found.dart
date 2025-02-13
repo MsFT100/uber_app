@@ -1,11 +1,12 @@
+import 'package:BucoRide/providers/location_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../helpers/style.dart';
-import '../locators/service_locator.dart';
-import '../providers/app_state.dart';
-import '../services/call_sms.dart';
-import 'custom_text.dart';
+import '../../helpers/style.dart';
+import '../../locators/service_locator.dart';
+import '../../providers/app_state.dart';
+import '../../services/call_sms.dart';
+import '../custom_text.dart';
 
 class DriverFoundWidget extends StatelessWidget {
   final CallsAndMessagesService _service = locator<CallsAndMessagesService>();
@@ -13,7 +14,7 @@ class DriverFoundWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AppStateProvider appState = Provider.of<AppStateProvider>(context);
-
+    final locationProvider = Provider.of<LocationProvider>(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.2,
       minChildSize: 0.05,
@@ -24,7 +25,7 @@ class DriverFoundWidget extends StatelessWidget {
             color: white,
             boxShadow: [
               BoxShadow(
-                color: grey.withOpacity(0.8),
+                color: grey,
                 offset: const Offset(3, 2),
                 blurRadius: 7,
               ),
@@ -40,7 +41,7 @@ class DriverFoundWidget extends StatelessWidget {
                   CustomText(
                     text: appState.driverArrived
                         ? 'Your ride has arrived'
-                        : 'Your ride arrives in ${appState.routeModel?.timeNeeded.text ?? '...'}',
+                        : 'Your ride arrives in ${locationProvider.routeModel?.timeNeeded.text ?? '...'}',
                     size: 12,
                     weight: FontWeight.w300,
                     color: appState.driverArrived ? green : grey,
@@ -63,14 +64,14 @@ class DriverFoundWidget extends StatelessWidget {
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: "${appState.driverModel?.name ?? 'Driver'}\n",
+                          text: "${appState.driverModel.name}\n",
                           style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         TextSpan(
-                          text: appState.driverModel.car ?? 'Car info',
+                          text: appState.driverModel.car,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w300,
@@ -83,25 +84,23 @@ class DriverFoundWidget extends StatelessWidget {
                 ),
                 subtitle: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey.withOpacity(0.5),
+                    backgroundColor: Colors.grey,
                   ),
                   onPressed: null,
                   child: CustomText(
-                    text: appState.driverModel?.plate ?? 'Plate info',
+                    text: appState.driverModel.plate,
                     color: white,
                   ),
                 ),
                 trailing: Container(
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.3),
+                    color: const Color.fromARGB(113, 76, 175, 79),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: IconButton(
                     onPressed: () {
                       final phone = appState.driverModel.phone;
-                      if (phone != null) {
-                        _service.call(phone);
-                      }
+                      _service.call(phone);
                     },
                     icon: const Icon(Icons.call),
                   ),

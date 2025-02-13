@@ -1,16 +1,18 @@
 import 'dart:async';
 
+import 'package:BucoRide/helpers/screen_navigation.dart';
+import 'package:BucoRide/screens/menu.dart';
+import 'package:BucoRide/utils/images.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import 'package:user_app/screens/menu.dart';
-import 'package:user_app/utils/images.dart';
 
+import '../providers/app_state.dart';
 import '../providers/user.dart';
 import '../utils/app_constants.dart';
-import '../widgets/loading.dart';
-import 'login.dart';
+import 'auth/login.dart';
+import 'intro_pages/OnBoard.dart';
 
 class Splash extends StatefulWidget {
   const Splash({super.key});
@@ -23,13 +25,12 @@ class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
   late StreamSubscription<List<ConnectivityResult>> _onConnectivityChanged;
   bool isConnected = false;
   bool isFirst = true;
-
+  bool firstLaunch = false;
   late AnimationController _controller;
   late Animation _animation;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     if (!GetPlatform.isIOS) {
       _checkConnectivity();
@@ -50,7 +51,7 @@ class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
   @override
   void dispose() {
     _controller.dispose();
-    _onConnectivityChanged?.cancel();
+    _onConnectivityChanged.cancel();
     super.dispose();
   }
 
@@ -87,16 +88,26 @@ class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
 
   void _route() async {
     UserProvider auth = Provider.of<UserProvider>(context, listen: false);
+    AppStateProvider appState =
+        Provider.of<AppStateProvider>(context, listen: false);
     await Future.delayed(Duration(seconds: 5)); // add delay for splash
 
     if (auth.status == Status.Authenticated) {
       // Navigate to Home if authenticated
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => Menu(title: AppConstants.appName)));
+      changeScreenReplacement(
+          context,
+          Menu(
+            title: '',
+          ));
     } else {
       // Navigate to Login if not authenticated
-      Navigator.of(context)
-          .pushReplacement(MaterialPageRoute(builder: (_) => LoginScreen()));
+      firstLaunch = await appState.checkIfFirstLaunch();
+
+      if (firstLaunch) {
+        changeScreenReplacement(context, OnBoarding());
+      } else {
+        changeScreenReplacement(context, LoginScreen());
+      }
     }
   }
 
@@ -132,7 +143,6 @@ class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
                           child: Image.asset(Images.logoWithName, width: 160),
                         ),
                       ),
-                      Loading(), // add loading widget here
                       const SizedBox(height: 50),
                       Image.asset(Images.splashBackgroundOne,
                           width: MediaQuery.of(context).size.width,

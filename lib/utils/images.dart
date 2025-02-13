@@ -9,7 +9,10 @@ class Images {
   static const String placeholder = 'assets/image/placeholder.jpg';
   static const String personPlaceholder = 'assets/image/person_placeholder.png';
   static const String cameraPlaceholder = 'assets/image/camera_placeholder.png';
-  static const String onBoard = 'assets/image/on_board_one.png';
+  static const String onBoardOne = 'assets/image/on_board_one.png';
+  static const String onBoardTwo = 'assets/image/on_board_two.png';
+  static const String onBoardThree = 'assets/image/on_board_three.png';
+
   static const String lock = 'assets/image/lock.png';
   static const String person = 'assets/image/person.png';
   static const String password = 'assets/image/password.png';
@@ -95,6 +98,7 @@ class Images {
   static const String splashBackgroundOne = 'assets/image/splash_one.png';
   static const String splashBackgroundTwo = 'assets/image/splash_two.png';
   static const String mapLocationIcon = 'assets/image/map_location_icon.png';
+  static const String markerLocationIcon = 'assets/image/marker_location_icon.png';
   static const String addNewAddress = 'assets/image/add_new_address.png';
   static const String other = 'assets/image/other.png';
   static const String office = 'assets/image/office.png';

@@ -50,7 +50,7 @@ List<BoxShadow>? cardShadow = Get.isDarkMode
           offset: const Offset(1, 0),
           blurRadius: 1,
           spreadRadius: 1,
-          color: Colors.black.withOpacity(0.5),
+          color: Colors.black,
         )
       ];
 

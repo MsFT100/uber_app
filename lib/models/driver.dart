@@ -15,54 +15,49 @@ class DriverModel {
   static const VOTES = "votes";
   static const PHONE = "phone";
 
-  String _id = ""; // Initialize with a default empty value
-  String _name = ""; // Initialize with a default empty value
-  String _car = ""; // Initialize with a default empty value
-  String _plate = ""; // Initialize with a default empty value
-  String _photo = ""; // Initialize with a default empty value
-  String _phone = ""; // Initialize with a default empty value
+  String _id = "";
+  String _name = "";
+  String _car = "";
+  String _plate = "";
+  String _photo = "";
+  String _phone = "";
 
-  double _rating = 0.0; // Initialize with a default value
-  int _votes = 0; // Initialize with a default value
+  double _rating = 0.0;
+  int _votes = 0;
 
-  DriverPosition _position = DriverPosition(
-      lat: 0.0, lng: 0.0, heading: 0.0); // Initialize with default position
+  DriverPosition _position = DriverPosition(lat: 0.0, lng: 0.0, heading: 0.0);
 
+  // Getters
   String get id => _id;
-
   String get name => _name;
-
   String get car => _car;
-
   String get plate => _plate;
-
   String get photo => _photo;
-
   String get phone => _phone;
-
   DriverPosition get position => _position;
-
   double get rating => _rating;
-
   int get votes => _votes;
 
   DriverModel.fromSnapshot(DocumentSnapshot snapshot) {
-    // Ensure that snapshot data is a Map<String, dynamic>
-    Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
+    Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>? ?? {};
 
-    _name = data[NAME];
-    _id = data[ID];
-    _car = data[CAR];
-    _plate = data[PLATE];
-    _photo = data[PHOTO];
-    _phone = data[PHONE];
+    _id = data[ID] ?? "";
+    _name = data[NAME] ?? "Unknown Driver";
+    _car = data[CAR] ?? "Unknown Car";
+    _plate = data[PLATE] ?? "N/A";
+    _photo = data[PHOTO] ?? "";
+    _phone = data[PHONE] ?? "No Phone";
 
-    _rating = data[RATING];
-    _votes = data[VOTES];
-    _position = DriverPosition(
-        lat: data[POSITION][LATITUDE],
-        lng: data[POSITION][LONGITUDE],
-        heading: data[POSITION][HEADING]);
+    _rating = (data[RATING] ?? 0).toDouble();
+    _votes = (data[VOTES] ?? 0);
+
+    if (data[POSITION] != null) {
+      _position = DriverPosition(
+        lat: (data[POSITION][LATITUDE] ?? 0.0).toDouble(),
+        lng: (data[POSITION][LONGITUDE] ?? 0.0).toDouble(),
+        heading: (data[POSITION][HEADING] ?? 0.0).toDouble(),
+      );
+    }
   }
 
   LatLng getPosition() {

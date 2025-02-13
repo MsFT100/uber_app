@@ -1,15 +1,16 @@
+import 'package:BucoRide/helpers/screen_navigation.dart';
+import 'package:BucoRide/helpers/style.dart';
+import 'package:BucoRide/providers/user.dart';
+import 'package:BucoRide/screens/auth/registration.dart';
+import 'package:BucoRide/screens/menu.dart';
+import 'package:BucoRide/utils/app_constants.dart';
+import 'package:BucoRide/widgets/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import 'package:user_app/helpers/screen_navigation.dart';
-import 'package:user_app/helpers/style.dart';
-import 'package:user_app/providers/user.dart';
-import 'package:user_app/screens/menu.dart';
-import 'package:user_app/screens/registration.dart';
-import 'package:user_app/utils/app_constants.dart';
-import 'package:user_app/widgets/loading.dart';
 
-import '../utils/images.dart';
+import '../../utils/dimensions.dart';
+import '../../utils/images.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -30,7 +31,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       key: _loginScaffoldKey,
       backgroundColor: AppConstants.lightPrimary,
-      //backgroundColor: A,
       body: authProvider.status == Status.Authenticating
           ? Loading()
           : SafeArea(
@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Column(children: [
-                        Image.asset(Images.logo, height: 75),
+                        Image.asset(Images.logoWithName, height: 75),
                         const SizedBox(
                           height: 8.0,
                         ),
@@ -52,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 '${'Welcome to'.tr} ' + AppConstants.appName,
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).primaryColorLight,
+                                  color: Colors.white,
                                   fontSize: 24.0,
                                 ),
                               ),
@@ -66,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         'Log in'.tr,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColorLight,
+                          color: Colors.white,
                           fontSize: 32.0,
                         ),
                       ),
@@ -134,23 +134,37 @@ class _LoginScreenState extends State<LoginScreen> {
                                   .toggleRememberMe(), // Makes entire row clickable
                               child: Row(
                                 children: [
-                                  Checkbox(
-                                    checkColor: Theme.of(context).primaryColor,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    activeColor: Theme.of(context).primaryColor,
-                                    value: authProvider.isRememberMe,
-                                    onChanged: (bool? isChecked) =>
-                                        authProvider.toggleRememberMe(),
-                                  ),
-                                  const SizedBox(width: 8.0),
                                   GestureDetector(
-                                    onTap: () => authProvider
-                                        .toggleRememberMe(), // Text is also clickable
+                                    onTap: () =>
+                                        authProvider.toggleRememberMe(),
+                                    child: Container(
+                                      width: Dimensions.iconSizeMedium,
+                                      height: Dimensions.iconSizeMedium,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                            color: Colors.blueAccent, width: 2),
+                                        borderRadius: BorderRadius.circular(5),
+                                        color: authProvider.isActiveRememberMe
+                                            ? Colors.blueAccent
+                                            : Colors.transparent,
+                                      ),
+                                      child: authProvider.isActiveRememberMe
+                                          ? Icon(Icons.check,
+                                              color: Colors.white,
+                                              size:
+                                                  18) // Blue tick when checked
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                      width: Dimensions.paddingSizeSmall),
+                                  GestureDetector(
+                                    onTap: () =>
+                                        authProvider.toggleRememberMe(),
                                     child: Text(
                                       'remember me'.tr,
-                                      style: TextStyle(fontSize: 14.0),
+                                      style: TextStyle(
+                                          fontSize: Dimensions.fontSizeDefault),
                                     ),
                                   ),
                                 ],
@@ -164,8 +178,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: Text(
                               'forgot password'.tr,
                               style: TextStyle(
-                                  color: Theme.of(context).primaryColor,
-                                  fontSize: 14.0),
+                                color: Colors.black,
+                                fontSize: Dimensions.fontSizeDefault,
+                              ),
                             ),
                           ),
                         ],
@@ -178,8 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             )
                           : SizedBox(
-                              //constraints: BoxConstraints(maxWidth: 300),
-                              width: 400,
+                              width: double.infinity,
                               child: ElevatedButton(
                                 onPressed: () async {
                                   String resultMessage =
@@ -205,7 +219,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 child: Text(
                                   'Log in'.tr,
-                                  style: TextStyle(fontSize: 18.0),
+                                  style: TextStyle(
+                                    fontSize: Dimensions.fontSizeLarge,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
                                   textAlign: TextAlign.center,
                                 ),
                               ),
@@ -226,22 +244,62 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 16.0),
                       SizedBox(
-                        width: 400,
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            authProvider.signInWithGoogle();
+                          },
+                          icon: Image.asset(
+                            'assets/image/google_icon.png', // Add a Google logo image in the assets folder
+                            height: 24.0,
+                            width: 24.0,
+                          ),
+                          label: Text(
+                            'Sign In with Google'.tr,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors
+                                .white, // White background like Google's button
+                            side: BorderSide(
+                                color: Colors.grey.shade300), // Thin border
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12.0),
+                            elevation: 2, // Subtle shadow for a raised effect
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16.0),
+                      SizedBox(
+                        width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () {
-                            // TODO: Implement OTP-Screen
                             //Get.to(OtpLoginScreen(fromSignIn: true));
                           },
                           style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors
+                                .white, // White background like Google's button
                             side: BorderSide(
-                                color: Theme.of(context).primaryColor),
-                            shape: StadiumBorder(),
-                            padding: EdgeInsets.symmetric(vertical: 14.0),
+                                color: Colors.grey.shade300), // Thin border
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12.0),
+                            elevation: 2, // Subtle shadow for a raised effect
                           ),
                           child: Text(
                             'OTP Login'.tr,
                             style: TextStyle(
-                                color: Theme.of(context).primaryColor),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
                           ),
                         ),
                       ),

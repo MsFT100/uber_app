@@ -1,16 +1,16 @@
+import 'package:BucoRide/screens/auth/login.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
-import 'package:user_app/screens/login.dart';
 
-import '../helpers/screen_navigation.dart';
-import '../helpers/style.dart';
-import '../providers/app_state.dart';
-import '../providers/user.dart';
-import '../utils/app_constants.dart';
-import '../utils/images.dart';
-import '../widgets/loading.dart';
-import 'home.dart';
+import '../../helpers/screen_navigation.dart';
+import '../../helpers/style.dart';
+import '../../providers/user.dart';
+import '../../utils/app_constants.dart';
+import '../../utils/images.dart';
+import '../../widgets/loading.dart';
+import '../menu.dart';
 
 class RegistrationScreen extends StatefulWidget {
   @override
@@ -19,17 +19,14 @@ class RegistrationScreen extends StatefulWidget {
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final GlobalKey<ScaffoldState> _registrationScaffoldKey =
-      GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     UserProvider authProvider = Provider.of<UserProvider>(context);
-    AppStateProvider app = Provider.of<AppStateProvider>(context);
 
     return Scaffold(
         key: _scaffoldKey,
-        backgroundColor: Color(0xFFB8860B),
+        backgroundColor: AppConstants.lightPrimary,
         body: authProvider.status == Status.Authenticating
             ? Loading()
             : SafeArea(
@@ -62,7 +59,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         SizedBox(
                             height: MediaQuery.of(context).size.height * 0.06),
                         Text(
-                          'Register'.tr,
+                          'JOIN US TODAY'.tr,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).primaryColor,
@@ -129,21 +126,25 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           padding: const EdgeInsets.all(12),
                           child: Container(
                             decoration: BoxDecoration(
-                                border: Border.all(color: white),
+                                border: Border.all(
+                                    color: Colors
+                                        .white), // Adjust the border color
                                 borderRadius: BorderRadius.circular(10)),
                             child: Padding(
-                              padding: EdgeInsets.only(left: 10),
-                              child: TextFormField(
+                              padding: const EdgeInsets.only(left: 10),
+                              child: IntlPhoneField(
                                 controller: authProvider.phone,
                                 decoration: InputDecoration(
-                                    hintStyle: TextStyle(color: white),
-                                    border: InputBorder.none,
-                                    label: Text("Phone"),
-                                    hintText: "+254",
-                                    icon: Icon(
-                                      Icons.phone,
-                                      color: white,
-                                    )),
+                                  labelText: "Phone",
+                                  hintText: "+254", // Placeholder hint
+                                  border: InputBorder.none,
+                                ),
+                                initialCountryCode:
+                                    'KE', // You can set a default country code here
+                                onChanged: (phone) {
+                                  print(phone
+                                      .completeNumber); // You can get the complete phone number here
+                                },
                               ),
                             ),
                           ),
@@ -180,8 +181,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                 ),
                               )
                             : SizedBox(
-                                //constraints: BoxConstraints(maxWidth: 300),
-                                width: 400,
+                                width: double.infinity,
                                 child: ElevatedButton(
                                   onPressed: () async {
                                     String resultMessage =
@@ -203,7 +203,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                     authProvider.password.clear();
                                     changeScreenReplacement(
                                         context,
-                                        MyHomePage(
+                                        Menu(
                                           key: _scaffoldKey,
                                           title: '',
                                         ));

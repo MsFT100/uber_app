@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,31 +12,20 @@ import '../helpers/constants.dart';
 import '../helpers/style.dart';
 import '../models/driver.dart';
 import '../models/ride_Request.dart';
-import '../models/route.dart';
 import '../models/user.dart';
-import '../services/drivers.dart';
-import '../services/map_requests.dart';
 import '../services/ride_requests.dart';
 import '../widgets/custom_btn.dart';
 import '../widgets/custom_text.dart';
 import '../widgets/stars.dart';
 
 // * THIS ENUM WILL CONTAIN THE DRAGGABLE WIDGET TO BE DISPLAYED ON THE MAIN SCREEN
-enum Show {
-  DESTINATION_SELECTION,
-  PICKUP_SELECTION,
-  PAYMENT_METHOD_SELECTION,
-  DRIVER_FOUND,
-  TRIP
-}
 
 class AppStateProvider with ChangeNotifier {
   static const ACCEPTED = 'accepted';
   static const CANCELLED = 'cancelled';
   static const PENDING = 'pending';
   static const EXPIRED = 'expired';
-  static const PICKUP_MARKER_ID = 'pickup';
-  static const LOCATION_MARKER_ID = 'location';
+
   static const DRIVER_AT_LOCATION_NOTIFICATION = 'DRIVER_AT_LOCATION';
   static const REQUEST_ACCEPTED_NOTIFICATION = 'REQUEST_ACCEPTED';
   static const TRIP_STARTED_NOTIFICATION = 'TRIP_STARTED';
@@ -45,40 +33,18 @@ class AppStateProvider with ChangeNotifier {
   final Set<Marker> _markers = {};
   //  this polys will be displayed on the map
   Set<Polyline> _poly = {};
-  // this polys temporarely store the polys to destination
-  Set<Polyline> _routeToDestinationPolys = {};
-  // this polys temporarely store the polys to driver
-  Set<Polyline> _routeToDriverpoly = {};
+  // this polys temporarily store the polys to destination
 
-  GoogleMapsServices _googleMapsServices = GoogleMapsServices();
-  late GoogleMapController _mapController;
-
-  static LatLng _center = LatLng(0, 0);
-  LatLng _lastPosition = _center;
-  TextEditingController pickupLocationControlelr = TextEditingController();
-  TextEditingController destinationController = TextEditingController();
   late Position current_position;
-  DriverService _driverService = DriverService();
-  //  draggable to show
-  Show show = Show.DESTINATION_SELECTION;
-
-  //   taxi pin
-  late BitmapDescriptor carPin;
+  late bool noDriversFound = true;
 
   //   location pin
-  late BitmapDescriptor locationPin;
-  late BitmapDescriptor customMarker;
-
-  LatLng get center => _center;
-
-  LatLng get lastPosition => _lastPosition;
+  BitmapDescriptor locationPin = BitmapDescriptor.defaultMarker;
+  BitmapDescriptor markerIcon = BitmapDescriptor.defaultMarker;
 
   Set<Marker> get markers => _markers;
 
   Set<Polyline> get poly => _poly;
-
-  GoogleMapController get mapController => _mapController;
-  RouteModel? routeModel;
 
   //  Driver request related variables
   bool lookingForDriver = false;
@@ -89,25 +55,19 @@ class AppStateProvider with ChangeNotifier {
   int timeCounter = 0;
   double percentage = 0;
   late Timer periodicTimer;
-  late String requestedDestination;
 
   String requestStatus = "";
-  late double requestedDestinationLat;
 
-  late double requestedDestinationLng;
-  late RideRequestModel rideRequestModel;
+  late RideRequestModel? rideRequestModel;
   late BuildContext mainContext;
 
 //  this variable will listen to the status of the ride request
   late StreamSubscription<QuerySnapshot> requestStream;
   // this variable will keep track of the drivers position before and during the ride
   late StreamSubscription<QuerySnapshot> driverStream;
-//  this stream is for all the driver on the app
-  late StreamSubscription<List<DriverModel>> allDriversStream;
-
+  late StreamSubscription<DocumentSnapshot>? _subscription;
   late DriverModel driverModel;
-  late LatLng pickupCoordinates;
-  late LatLng destinationCoordinates;
+
   double ridePrice = 0;
   String notificationType = "";
 
@@ -117,9 +77,9 @@ class AppStateProvider with ChangeNotifier {
     _saveDeviceToken();
 
     // Foreground message handling
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      handleOnMessage(message as Map<String, dynamic>);
-    });
+    // FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    //   handleOnMessage(message as Map<String, dynamic>);
+    // });
 
     // App launched by tapping a notification
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
@@ -133,255 +93,21 @@ class AppStateProvider with ChangeNotifier {
       }
     });
 
-    _setCustomMapPin();
-    _getUserLocation();
-    _listemToDrivers();
-    Geolocator.getPositionStream().listen(_updatePosition);
+    // _listenToDrivers();
+  }
+
+  Future<bool> checkIfFirstLaunch() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isFirstLaunch = prefs.getBool('isFirstLaunch') ?? true;
+    if (isFirstLaunch) {
+      prefs.setBool('isFirstLaunch', false);
+    }
+    return isFirstLaunch;
   }
 
   get destinationAddress => null;
 
   get pickupAddress => null;
-
-// ANCHOR: MAPS & LOCATION METHODS
-  _updatePosition(Position newPosition) {
-    current_position = newPosition;
-    notifyListeners();
-  }
-
-  Future<Position> _getUserLocation() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    //Check Location Permissions
-    LocationPermission permission = await Geolocator.requestPermission();
-    checkLocationPermission(permission);
-
-    // Get the current position
-    current_position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-
-    // Fetch the placemarks using coordinates
-    List<Placemark> placemarks = await placemarkFromCoordinates(
-      current_position.latitude,
-      current_position.longitude,
-    );
-
-    // Check if placemarks are available and extract the isoCountryCode
-    String? countryCode =
-        placemarks.isNotEmpty ? placemarks[0].isoCountryCode : null;
-    location_global_address =
-        "${placemarks.first.street}, ${placemarks.first.locality}, ${placemarks.first.country}";
-
-    addMarker(
-      Marker(
-        markerId: const MarkerId("user_location"),
-        position: LatLng(current_position.latitude, current_position.longitude),
-        icon: customMarker,
-        infoWindow: const InfoWindow(title: "Me"),
-      ),
-    );
-
-    // Save the country code in lowercase if it's not already set
-    if (prefs.getString(COUNTRY) == null && countryCode != null) {
-      String country = countryCode.toLowerCase();
-      await prefs.setString(COUNTRY, country);
-    }
-
-    // Update the center position
-    _center = LatLng(current_position.latitude, current_position.longitude);
-
-    notifyListeners();
-    return current_position;
-  }
-
-  void checkLocationPermission(LocationPermission permission) {
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      throw Exception("Location permissions are denied");
-    }
-  }
-
-  void onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-    notifyListeners();
-  }
-
-  setLastPosition(LatLng position) {
-    _lastPosition = position;
-    notifyListeners();
-  }
-
-  onCameraMove(CameraPosition position) {
-    //  MOVE the pickup marker only when selecting the pickup location
-    if (show == Show.PICKUP_SELECTION) {
-      _lastPosition = position.target;
-      changePickupLocationAddress(address: "loading...");
-      if (_markers.isNotEmpty) {
-        _markers.forEach((element) async {
-          if (element.markerId.value == PICKUP_MARKER_ID) {
-            _markers.remove(element);
-            pickupCoordinates = position.target;
-            addPickupMarker(position.target);
-            List<Placemark> placemark = await placemarkFromCoordinates(
-                position.target.latitude, position.target.longitude);
-            pickupLocationControlelr.text = placemark[0].name ??
-                'Unknown location'; // Providing fallback value
-            notifyListeners();
-          }
-        });
-      }
-      notifyListeners();
-    }
-  }
-
-  Future sendRequest(
-      {required LatLng origin, required LatLng destination}) async {
-    LatLng _org;
-    LatLng _dest;
-
-    if (origin == null && destination == null) {
-      _org = pickupCoordinates;
-      _dest = destinationCoordinates;
-    } else {
-      _org = origin;
-      _dest = destination;
-    }
-
-    RouteModel route =
-        await _googleMapsServices.getRouteByCoordinates(_org, _dest);
-    routeModel = route;
-
-    if (origin == null) {
-      ridePrice =
-          double.parse((routeModel!.distance.value / 500).toStringAsFixed(2));
-    }
-    List<Marker> mks = _markers
-        .where((element) => element.markerId.value == "location")
-        .toList();
-    if (mks.length >= 1) {
-      _markers.remove(mks[0]);
-    }
-// ! another method will be created just to draw the polys and add markers
-    _addLocationMarker(destinationCoordinates, routeModel!.distance.text);
-    _center = destinationCoordinates;
-    _createRoute(route.points, color: Colors.deepOrange);
-    _createRoute(
-      route.points,
-      color: Colors.black54,
-    );
-    _routeToDestinationPolys = _poly;
-    notifyListeners();
-  }
-
-  void updateDestination({required String destination}) {
-    destinationController.text = destination;
-    notifyListeners();
-  }
-
-  _createRoute(String decodeRoute, {required Color color}) {
-    clearPoly();
-    var uuid = new Uuid();
-    String polyId = uuid.v1();
-    _poly.add(Polyline(
-        polylineId: PolylineId(polyId),
-        width: 12,
-        color: color ?? primary,
-        onTap: () {},
-        points: _convertToLatLong(_decodePoly(decodeRoute))));
-    notifyListeners();
-  }
-
-  List<LatLng> _convertToLatLong(List points) {
-    List<LatLng> result = <LatLng>[];
-    for (int i = 0; i < points.length; i++) {
-      if (i % 2 != 0) {
-        result.add(LatLng(points[i - 1], points[i]));
-      }
-    }
-    return result;
-  }
-
-  List<double> _decodePoly(String poly) {
-    var list = poly.codeUnits;
-    var lList = <double>[]; // Use a typed list for better clarity
-    int index = 0;
-    int len = poly.length;
-    int c = 0;
-
-    // Repeating until all attributes are decoded
-    do {
-      var shift = 0;
-      int result = 0;
-
-      // Decoding value of one attribute
-      do {
-        c = list[index] - 63;
-        result |= (c & 0x1F) << (shift * 5);
-        index++;
-        shift++;
-      } while (c >= 32);
-
-      // If value is negative, bitwise NOT the value
-      if (result & 1 == 1) {
-        result = ~result;
-      }
-      var result1 = (result >> 1) * 0.00001;
-      lList.add(result1);
-    } while (index < len);
-
-    // Adding to the previous value as done in encoding
-    for (var i = 2; i < lList.length; i++) {
-      lList[i] += lList[i - 2];
-    }
-
-    print(lList.toString());
-
-    return lList;
-  }
-
-// ANCHOR: MARKERS AND POLYS
-  _addLocationMarker(LatLng position, String distance) {
-    _markers.add(Marker(
-        markerId: MarkerId(LOCATION_MARKER_ID),
-        position: position,
-        anchor: Offset(0, 0.85),
-        infoWindow:
-            InfoWindow(title: destinationController.text, snippet: distance),
-        icon: locationPin));
-    notifyListeners();
-  }
-
-  addPickupMarker(LatLng position) {
-    if (pickupCoordinates == null) {
-      pickupCoordinates = position;
-    }
-    _markers.add(Marker(
-        markerId: MarkerId(PICKUP_MARKER_ID),
-        position: position,
-        anchor: Offset(0, 0.85),
-        zIndex: 3,
-        infoWindow: InfoWindow(title: "Pickup", snippet: "location"),
-        icon: locationPin));
-    notifyListeners();
-  }
-
-  void _addDriverMarker(
-      {required LatLng position,
-      required double rotation,
-      required String driverId}) {
-    var uuid = new Uuid();
-    String markerId = uuid.v1();
-    _markers.add(Marker(
-        markerId: MarkerId(markerId),
-        position: position,
-        rotation: rotation,
-        draggable: false,
-        zIndex: 2,
-        flat: true,
-        anchor: Offset(1, 1),
-        icon: carPin));
-  }
 
   // Method to add a marker
   void addMarker(Marker marker) {
@@ -394,74 +120,25 @@ class AppStateProvider with ChangeNotifier {
     notifyListeners(); // Notify listeners to update the UI
   }
 
-  _updateMarkers(List<DriverModel> drivers) {
-//    this code will ensure that when the driver markers are updated the location marker wont be deleted
-    List<Marker> locationMarkers = _markers
-        .where((element) => element.markerId.value == 'location')
-        .toList();
-    clearMarkers();
-    if (locationMarkers.length > 0) {
-      _markers.add(locationMarkers[0]);
-    }
-
-//    here we are updating the drivers markers
-    drivers.forEach((DriverModel driver) {
-      _addDriverMarker(
-          driverId: driver.id,
-          position: LatLng(driver.position.lat, driver.position.lng),
-          rotation: driver.position.heading);
-    });
-  }
-
-  _updateDriverMarker(Marker marker) {
-    _markers.remove(marker);
-    sendRequest(
-        origin: pickupCoordinates, destination: driverModel.getPosition());
-    notifyListeners();
-    _addDriverMarker(
-        position: driverModel.getPosition(),
-        rotation: driverModel.position.heading,
-        driverId: driverModel.id);
-  }
-
-  _setCustomMapPin() async {
-    carPin = await BitmapDescriptor.asset(
-        ImageConfiguration(devicePixelRatio: 2.5), 'images/taxi.png');
-
-    locationPin = await BitmapDescriptor.asset(
-        ImageConfiguration(devicePixelRatio: 2.5), 'images/pin.png');
-  }
+  // _updateDriverMarker(Marker marker) {
+  //   _markers.remove(marker);
+  //   sendRequest(
+  //       origin: pickupCoordinates, destination: driverModel.getPosition());
+  //   notifyListeners();
+  //   // _addDriverMarker(
+  //   //     position: driverModel.getPosition(),
+  //   //     rotation: driverModel.position.heading,
+  //   //     driverId: driverModel.id);
+  // }
 
   clearMarkers() {
     _markers.clear();
     notifyListeners();
   }
 
-  _clearDriverMarkers() {
-    _markers.forEach((element) {
-      String _markerId = element.markerId.value;
-      if (_markerId != driverModel.id ||
-          _markerId != LOCATION_MARKER_ID ||
-          _markerId != PICKUP_MARKER_ID) {
-        _markers.remove(element);
-        notifyListeners();
-      }
-    });
-  }
-
-  clearPoly() {
-    _poly.clear();
-    notifyListeners();
-  }
-
 // ANCHOR UI METHODS
   changeMainContext(BuildContext context) {
     mainContext = context;
-    notifyListeners();
-  }
-
-  changeWidgetShowed({required Show showWidget}) {
-    show = showWidget;
     notifyListeners();
   }
 
@@ -519,7 +196,7 @@ class AppStateProvider with ChangeNotifier {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Visibility(
-                        visible: driverModel?.photo == null,
+                        visible: driverModel.photo == null,
                         child: Container(
                           decoration: BoxDecoration(
                               color: Colors.grey,
@@ -536,14 +213,14 @@ class AppStateProvider with ChangeNotifier {
                         ),
                       ),
                       Visibility(
-                        visible: driverModel?.photo != null,
+                        visible: driverModel.photo != null,
                         child: Container(
                           decoration: BoxDecoration(
                               color: Colors.deepOrange,
                               borderRadius: BorderRadius.circular(40)),
                           child: CircleAvatar(
                             radius: 45,
-                            backgroundImage: NetworkImage(driverModel!.photo),
+                            backgroundImage: NetworkImage(driverModel.photo),
                           ),
                         ),
                       )
@@ -553,7 +230,7 @@ class AppStateProvider with ChangeNotifier {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CustomText(text: driverModel?.name ?? "Nada"),
+                      CustomText(text: driverModel.name),
                     ],
                   ),
                   SizedBox(height: 10),
@@ -565,7 +242,7 @@ class AppStateProvider with ChangeNotifier {
                       TextButton.icon(
                           onPressed: null,
                           icon: Icon(Icons.directions_car),
-                          label: Text(driverModel.car ?? "Nan")),
+                          label: Text(driverModel.car)),
                       CustomText(
                         text: driverModel.plate,
                         color: Colors.deepOrange,
@@ -616,211 +293,221 @@ class AppStateProvider with ChangeNotifier {
     }
   }
 
-  changeRequestedDestination(
-      {required String reqDestination,
-      required double lat,
-      required double lng}) {
-    requestedDestination = reqDestination;
-    requestedDestinationLat = lat;
-    requestedDestinationLng = lng;
-    notifyListeners();
-  }
-
-  listenToRequest({required String id, required BuildContext context}) async {
+/*  listenToRequest({required String id, required BuildContext context}) async {
     requestStream = _requestServices.requestStream().listen((querySnapshot) {
-      querySnapshot.documentChanges.forEach((doc) async {
-        if (doc.document.data['id'] == id) {
-          rideRequestModel = RideRequestModel.fromSnapshot(doc.document);
-          notifyListeners();
-          switch (doc.document.data['status']) {
-            case CANCELLED:
-              break;
-            case ACCEPTED:
-              if (lookingForDriver) Navigator.pop(context);
-              lookingForDriver = false;
-              driverModel = await _driverService
-                  .getDriverById(doc.document.data['driverId']);
-              periodicTimer.cancel();
-              clearPoly();
-              _stopListeningToDriversStream();
-              _listenToDriver();
-              show = Show.DRIVER_FOUND;
-              notifyListeners();
+      final documentChanges = querySnapshot.documentChanges;
 
-              // showDriverBottomSheet(context);
-              break;
-            case EXPIRED:
-              showRequestExpiredAlert(context);
-              break;
-            default:
-              break;
+      if (documentChanges != null) {
+        documentChanges.forEach((doc) async {
+          final data = doc.document.data;
+
+          if (data != null && data['id'] == id) {
+            rideRequestModel = RideRequestModel.fromSnapshot(doc.document);
+            notifyListeners();
+
+            switch (data['status']) {
+              case CANCELLED:
+                break;
+              case ACCEPTED:
+                if (lookingForDriver) Navigator.pop(context);
+                lookingForDriver = false;
+                driverModel =
+                    await _driverService.getDriverById(data['driverId']);
+                periodicTimer.cancel();
+                clearPoly();
+                _stopListeningToDriversStream();
+                _listenToDriver();
+                show = Show.DRIVER_FOUND;
+                notifyListeners();
+                break;
+              case EXPIRED:
+                showRequestExpiredAlert(context);
+                break;
+              default:
+                break;
+            }
+          }
+        });
+      }
+    });
+  }*/
+  void listenToRequest({required String id, required BuildContext context}) {
+    _subscription = _requestServices.requestStream(id).listen((snapshot) {
+      if (snapshot.exists) {
+        final data = snapshot.data() as Map<String, dynamic>?;
+
+        if (data == null) return; // Prevent null errors
+
+        final status = data['status'];
+
+        if (context.mounted) {
+          // Ensure context is still valid
+          if (status == 'accepted') {
+            final driverId = data['driverId'];
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text("Driver $driverId accepted your request! 🚗")),
+            );
+            canceRequestlListener();
+            showDriverBottomSheet(context);
+            // TODO: Navigate to ride tracking screen
+          } else if (status == 'cancelled') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text("Your ride request was cancelled. ❌")),
+            );
           }
         }
-      });
+      }
     });
   }
 
-  requestDriver(
-      {required UserModel user,
-      required double lat,
-      required double lng,
-      required BuildContext context,
-      required Map distance}) {
+  // Call this method when the listener is no longer needed
+  void canceRequestlListener() {
+    _subscription?.cancel();
+  }
+
+  void requestDriver({
+    required UserModel user,
+    required double lat,
+    required double lng,
+    required BuildContext context,
+    required Map distance,
+    required String address,
+    required LatLng destinationCoordinates,
+  }) {
     alertsOnUi = true;
     notifyListeners();
-    var uuid = new Uuid();
-    String id = uuid.v1();
+
+    var uuid = Uuid();
+    String requestId = uuid.v1(); // Unique request ID
     Map<String, dynamic> distanceMap = Map<String, dynamic>.from(distance);
+
+    // Create Ride Request
     _requestServices.createRideRequest(
-        id: id,
-        userId: user.id,
-        username: user.name,
-        distance: distanceMap,
-        destination: {
-          "address": requestedDestination,
-          "latitude": requestedDestinationLat,
-          "longitude": requestedDestinationLng
-        },
-        position: {
-          "latitude": lat,
-          "longitude": lng
-        });
-    listenToRequest(id: id, context: context);
-    percentageCounter(requestId: id, context: context);
+      id: requestId,
+      userId: user.id,
+      username: user.name,
+      distance: distanceMap,
+      destination: {
+        "address": address, // Replace with actual address
+        "latitude": destinationCoordinates
+            .latitude, // Replace with destination latitude
+        "longitude": destinationCoordinates
+            .longitude, // Replace with destination longitude
+      },
+      position: {
+        "latitude": lat,
+        "longitude": lng,
+      },
+    );
+    print("=======================Creating Ride Request");
+
+    // ✅ Assign the rideRequestModel after creating a request
+    rideRequestModel = RideRequestModel.fromMap({
+      "id": requestId,
+      "userId": user.id,
+      "username": user.name,
+      "driverId": "",
+      "position": {"latitude": lat, "longitude": lng},
+      "destination": {
+        "address": address,
+        "latitude": destinationCoordinates
+            .latitude, // Replace with destination latitude
+        "longitude": destinationCoordinates.longitude,
+      },
+      "distance": distance,
+      "status": "pending",
+    });
+
+    // Start listening for driver responses
+    listenToRequest(id: requestId, context: context);
+    percentageCounter(requestId: requestId, context: context);
   }
 
   cancelRequest() {
     lookingForDriver = false;
+    if (rideRequestModel == null) {
+      print("No ride request to cancel.");
+      return;
+    }
     _requestServices
-        .updateRequest({"id": rideRequestModel.id, "status": "cancelled"});
+        .updateRequest({"id": rideRequestModel!.id, "status": "cancelled"});
     periodicTimer.cancel();
     notifyListeners();
   }
 
-// ANCHOR LISTEN TO DRIVER
-  _listemToDrivers() {
-    allDriversStream = _driverService.getDrivers().listen(_updateMarkers);
-  }
-
-  _listenToDriver() {
-    driverStream = _driverService.driverStream().listen((event) {
-      event.documentChanges.forEach((change) async {
-        if (change.document.data['id'] == driverModel.id) {
-          driverModel = DriverModel.fromSnapshot(change.document);
-          // code to update marker
-//          List<Marker> _m = _markers
-//              .where((element) => element.markerId.value == driverModel.id).toList();
-//          _markers.remove(_m[0]);
-          clearMarkers();
-          sendRequest(
-              origin: pickupCoordinates,
-              destination: driverModel.getPosition());
-          if (routeModel!.distance.value <= 200) {
-            driverArrived = true;
-          }
-          notifyListeners();
-
-          _addDriverMarker(
-              position: driverModel.getPosition(),
-              rotation: driverModel.position.heading,
-              driverId: driverModel.id);
-          addPickupMarker(pickupCoordinates);
-          // _updateDriverMarker(_m[0]);
-        }
-      });
-    });
-
-    show = Show.DRIVER_FOUND;
-    notifyListeners();
-  }
-
-  _stopListeningToDriversStream() {
-//    _clearDriverMarkers();
-    allDriversStream.cancel();
-  }
-
 //  Timer counter for driver request
-  percentageCounter(
+  void percentageCounter(
       {required String requestId, required BuildContext context}) {
     lookingForDriver = true;
+    noDriversFound = false; // Reset flag
     notifyListeners();
+
     periodicTimer = Timer.periodic(Duration(seconds: 1), (time) {
-      timeCounter = timeCounter + 1;
+      timeCounter++;
       percentage = timeCounter / 100;
-      print("====== GOOOO $timeCounter");
+      print("====== Searching: $timeCounter");
+
       if (timeCounter == 100) {
         timeCounter = 0;
         percentage = 0;
         lookingForDriver = false;
+        noDriversFound = true; // Set flag when search expires
+
+        // Update Firestore request status to expired
         _requestServices.updateRequest({"id": requestId, "status": "expired"});
+
         time.cancel();
         if (alertsOnUi) {
-          Navigator.pop(context);
           alertsOnUi = false;
           notifyListeners();
         }
         requestStream.cancel();
+        canceRequestlListener();
       }
       notifyListeners();
     });
   }
 
-  setPickCoordinates({required LatLng coordinates}) {
-    pickupCoordinates = coordinates;
-    notifyListeners();
-  }
-
-  setDestination({required LatLng coordinates}) {
-    destinationCoordinates = coordinates;
-    notifyListeners();
-  }
-
-  changePickupLocationAddress({required String address}) {
-    pickupLocationControlelr.text = address;
-    if (pickupCoordinates != null) {
-      _center = pickupCoordinates;
-    }
-    notifyListeners();
-  }
-
   // ANCHOR PUSH NOTIFICATION METHODS
-  Future handleOnMessage(Map<String, dynamic> data) async {
-    print("=== data = ${data.toString()}");
-    notificationType = data['data']['type'];
+  // Future handleOnMessage(Map<String, dynamic> data) async {
+  //   print("=== data = ${data.toString()}");
+  //   notificationType = data['data']['type'];
 
-    if (notificationType == DRIVER_AT_LOCATION_NOTIFICATION) {
-    } else if (notificationType == TRIP_STARTED_NOTIFICATION) {
-      show = Show.TRIP;
-      sendRequest(
-          origin: pickupCoordinates, destination: destinationCoordinates);
-      notifyListeners();
-    } else if (notificationType == REQUEST_ACCEPTED_NOTIFICATION) {}
-    notifyListeners();
-  }
+  //   if (notificationType == DRIVER_AT_LOCATION_NOTIFICATION) {
+  //   } else if (notificationType == TRIP_STARTED_NOTIFICATION) {
+  //     show = Show.TRIP;
+  //     sendRequest(
+  //         origin: pickupCoordinates, destination: destinationCoordinates);
+  //     notifyListeners();
+  //   } else if (notificationType == REQUEST_ACCEPTED_NOTIFICATION) {}
+  //   notifyListeners();
+  // }
 
   Future handleOnLaunch(Map<String, dynamic> data) async {
     notificationType = data['data']['type'];
     if (notificationType == DRIVER_AT_LOCATION_NOTIFICATION) {
     } else if (notificationType == TRIP_STARTED_NOTIFICATION) {
     } else if (notificationType == REQUEST_ACCEPTED_NOTIFICATION) {}
-    driverModel = await _driverService.getDriverById(data['data']['driverId']);
-    _stopListeningToDriversStream();
+    //driverModel = await _driverService.getDriverById(data['data']['driverId']);
+    //_stopListeningToDriversStream();
 
-    _listenToDriver();
+    //_listenToDriver();
     notifyListeners();
   }
 
   Future handleOnResume(Map<String, dynamic> data) async {
     notificationType = data['data']['type'];
 
-    _stopListeningToDriversStream();
+    //_stopListeningToDriversStream();
     if (notificationType == DRIVER_AT_LOCATION_NOTIFICATION) {
     } else if (notificationType == TRIP_STARTED_NOTIFICATION) {
     } else if (notificationType == REQUEST_ACCEPTED_NOTIFICATION) {}
 
     if (lookingForDriver) Navigator.pop(mainContext);
     lookingForDriver = false;
-    driverModel = await _driverService.getDriverById(data['data']['driverId']);
+    //driverModel = await _driverService.getDriverById(data['data']['driverId']);
     periodicTimer.cancel();
     notifyListeners();
   }

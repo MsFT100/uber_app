@@ -36,8 +36,21 @@ class UserServices {
   }
 
   // Update user data
-  void updateUserData(Map<String, dynamic> values) {
-    _firebaseFirestore.collection(collection).doc(values['id']).update(values);
+  Future<void> updateUserData(UserModel user) async {
+    await _firebaseFirestore
+        .collection(collection)
+        .doc(user.id)
+        .update(user.toJson());
+    print("Values Updates===========================");
+  }
+
+  // Update user data
+  Future<void> updateUserProfile(UserModel user, String pic) async {
+    await _firebaseFirestore
+        .collection(collection)
+        .doc(user.id)
+        .update(user.toJson());
+    print("Values Updates===========================");
   }
 
   // Get a user by ID

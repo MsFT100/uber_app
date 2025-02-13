@@ -138,6 +138,8 @@ class AppConstants {
 
   static const int limitOfPickedIdentityImageNumber = 2;
   static const double limitOfPickedImageSizeInMB = 2;
+  static const defaultTextSize = 18.0;
+  static const defaultWeight = FontWeight.bold;
   static const GOOGLE_MAPS_API_KEY = "AIzaSyBqD2lxHfrvXS6DszBaG1w-dHAXnArbbPE";
   //static List<OnBoardingModel> onBoardPagerData = [
   //  OnBoardingModel(title: 'on_boarding_1_title'.tr, image: 'assets/image/on_board_one.png'),

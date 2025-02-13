@@ -10,33 +10,31 @@ class RideRequestModel {
   static const String DESTINATION = "destination";
 
   // Fields
-  late final String _id;
-  late final String _username;
-  late final String _userId;
-  String? _driverId; // Nullable
-  late final String _status;
-  late final Map _position;
-  late final Map _destination;
+  final String id;
+  final String username;
+  final String userId;
+  final String? driverId; // Nullable
+  final String status;
+  final Map<String, dynamic> position;
+  final Map<String, dynamic> destination;
 
-  // Getters
-  String get id => _id;
-  String get username => _username;
-  String get userId => _userId;
-  String? get driverId => _driverId; // Nullable
-  String get status => _status;
-  Map get position => _position;
-  Map get destination => _destination;
+  // Constructor from Firestore snapshot
+  RideRequestModel.fromSnapshot(DocumentSnapshot snapshot)
+      : id = snapshot[ID] ?? '',
+        username = snapshot[USERNAME] ?? '',
+        userId = snapshot[USER_ID] ?? '',
+        driverId = snapshot[DRIVER_ID], // Nullable
+        status = snapshot[STATUS] ?? '',
+        position = Map<String, dynamic>.from(snapshot[POSITION] ?? {}),
+        destination = Map<String, dynamic>.from(snapshot[DESTINATION] ?? {});
 
-  // Constructor for creating the object from Firestore snapshot
-  RideRequestModel.fromSnapshot(DocumentSnapshot snapshot) {
-    final data =
-        snapshot.data() as Map<String, dynamic>?; // Ensure data is not null
-    _id = data?[ID] ?? ''; // Default to empty string if null
-    _username = data?[USERNAME] ?? '';
-    _userId = data?[USER_ID] ?? '';
-    _driverId = data?[DRIVER_ID]; // Nullable
-    _status = data?[STATUS] ?? '';
-    _position = data?[POSITION] ?? {};
-    _destination = data?[DESTINATION] ?? {};
-  }
+  // ✅ Custom constructor to create from a Map
+  RideRequestModel.fromMap(Map<String, dynamic> data)
+      : id = data[ID] ?? '',
+        username = data[USERNAME] ?? '',
+        userId = data[USER_ID] ?? '',
+        driverId = data[DRIVER_ID],
+        status = data[STATUS] ?? '',
+        position = Map<String, dynamic>.from(data[POSITION] ?? {}),
+        destination = Map<String, dynamic>.from(data[DESTINATION] ?? {});
 }

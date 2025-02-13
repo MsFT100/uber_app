@@ -1,4 +1,4 @@
-name: user_app
+name: BucoRide
 description: A new Flutter application.
 version: 1.0.0+1
 
@@ -19,7 +19,7 @@ dependencies:
   firebase_crashlytics: ^4.0.3
   flutter_google_places_sdk: ^0.3.2+1
   flutter_spinkit: ^5.2.1
-
+  firebase_storage: ^12.4.1
 
   geolocator: ^13.0.2
   geoflutterfire_plus: ^0.0.32
@@ -39,7 +39,11 @@ dependencies:
   url_launcher: ^6.1.10
   get_it: 8.0.3
   flutter_secure_storage: ^9.2.4
-  flutter_launcher_icons: ^0.14.3
+  intl_phone_field: ^3.2.0
+  smooth_page_indicator: ^1.0.0
+  curved_labeled_navigation_bar: ^2.0.5
+  image_picker: ^1.1.2
+  google_sign_in: ^6.2.2
 
 dev_dependencies:
   flutter_test:
@@ -92,4 +96,4 @@ flutter:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/image/lg.png"
+  image_path: "assets/image/logo_with_name.png"

@@ -27,7 +27,7 @@ class TripWidget extends StatelessWidget {
 //                            topRight: Radius.circular(20)),
                 boxShadow: [
                   BoxShadow(
-                      color: grey.withOpacity(.8),
+                      color: Color.fromARGB(218, 158, 158, 158),
                       offset: Offset(3, 2),
                       blurRadius: 7)
                 ]),
@@ -51,7 +51,7 @@ class TripWidget extends StatelessWidget {
                 Divider(),
                 ListTile(
                   leading: Container(
-                    child: appState.driverModel?.phone == null
+                    child: appState.driverModel.phone == null
                         ? CircleAvatar(
                             radius: 30,
                             child: Icon(
@@ -62,7 +62,7 @@ class TripWidget extends StatelessWidget {
                         : CircleAvatar(
                             radius: 30,
                             backgroundImage:
-                                NetworkImage(appState.driverModel!.photo),
+                                NetworkImage(appState.driverModel.photo),
                           ),
                   ),
                   title: Row(

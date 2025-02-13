@@ -28,7 +28,7 @@ class CustomBtn extends StatelessWidget {
           color: bgColor ?? Colors.black,
           boxShadow: [
             BoxShadow(
-              color: (shadowColor ?? Colors.grey).withOpacity(0.5),
+              color: (shadowColor ?? Colors.grey),
               offset: const Offset(2, 3),
               blurRadius: 4,
             ),

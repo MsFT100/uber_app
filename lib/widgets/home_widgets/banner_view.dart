@@ -12,9 +12,9 @@ class _BannerViewState extends State<BannerView> {
   int activeIndex = 0;
 
   final List<String> bannerImages = [
-    'assets/image/placeholder.jpg',
-    'assets/image/placeholder.jpg',
-    'assets/image/placeholder.jpg', // Add more images here
+    'assets/image/Buricode-banner.png',
+    'assets/image/Buricode-banner.png',
+    'assets/image/Buricode-banner.png', // Add more images here
   ];
 
   @override

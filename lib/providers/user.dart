@@ -1,8 +1,13 @@
 import 'dart:async';
 
+import 'package:BucoRide/models/trip.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user.dart';
@@ -21,15 +26,17 @@ class UserProvider with ChangeNotifier {
   final UserServices _userServices = UserServices();
   UserModel? _userModel;
   bool _isActiveRememberMe = false;
-
+  List<TripModel> _trips = [];
   // Secure storage for sensitive data
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
-
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   // Getters
   UserModel? get userModel => _userModel;
   Status get status => _status;
   User? get user => _user;
   bool get isActiveRememberMe => _isActiveRememberMe;
+
+  List<TripModel> get trips => _trips;
 
   // Text controllers for input
   final TextEditingController email = TextEditingController();
@@ -60,7 +67,9 @@ class UserProvider with ChangeNotifier {
 
       _user = result.user;
       if (_user != null) {
-        await _saveUserToPreferences(_user!);
+        if (_isActiveRememberMe) {
+          await _saveUserToPreferences(_user!);
+        }
         _userModel = await _userServices.getUserById(_user!.uid);
         _status = Status.Authenticated;
         notifyListeners();
@@ -85,6 +94,52 @@ class UserProvider with ChangeNotifier {
       _status = Status.Unauthenticated;
       notifyListeners();
       return "An unknown error occurred: $e";
+    }
+  }
+
+  Future<User?> signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return null; // User canceled sign-in
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
+      _user = userCredential.user;
+
+      if (_user != null) {
+        // Try fetching user data
+        _userModel = await _userServices.getUserById(_user!.uid);
+
+        // If user does not exist in Firestore, create a new entry
+        if (_userModel == null) {
+          await _userServices.createUser(
+            id: _user!.uid,
+            name: _user!.displayName ?? '',
+            email: _user!.email ?? '',
+            phone: _user!.phoneNumber ?? '',
+            position: {},
+          );
+
+          // Fetch the newly created user data
+          _userModel = await _userServices.getUserById(_user!.uid);
+        }
+
+        _status = Status.Authenticated;
+        notifyListeners();
+      }
+
+      return _user;
+    } catch (e) {
+      print("Google Sign-In Error: $e");
+      return null;
     }
   }
 
@@ -145,10 +200,16 @@ class UserProvider with ChangeNotifier {
   /// Sign-out method
   Future<void> signOut() async {
     await FirebaseAuth.instance.signOut();
+    await GoogleSignIn().signOut();
     await _clearUserFromPreferences();
     _status = Status.Unauthenticated;
     _user = null;
     _userModel = null;
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('remember_me', false); // Reset Remember Me
+    _isActiveRememberMe = false;
+
     notifyListeners();
   }
 
@@ -160,10 +221,49 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  /// Update user data
-  Future<void> updateUserData(Map<String, dynamic> data) async {
-    _userServices.updateUserData(data);
+  Future<void> updateUserData(UserModel userM) async {
+    _userServices.updateUserData(userM);
     await reloadUserModel();
+  }
+
+  Future<void> updateProfilePic(XFile image) async {
+    try {
+      String? photoURL;
+
+      // Reference to Firebase Storage
+      final storageRef = FirebaseStorage.instance.ref();
+      final imageRef = storageRef.child('profile_pictures/${user!.uid}.jpg');
+
+      // Convert XFile to bytes and upload
+      final imageBytes = await image.readAsBytes();
+      await imageRef.putData(imageBytes);
+
+      // Get the download URL of the uploaded image
+      photoURL = await imageRef.getDownloadURL();
+
+      // Update the Firebase Auth profile with the new photo URL
+      await user!.updatePhotoURL(photoURL);
+      await user!.reload(); // Reload the user to reflect the new photoURL
+
+      // Update local user data
+      _user = FirebaseAuth.instance.currentUser;
+
+      // Reload Firestore user model if needed
+      await reloadUserModel();
+
+      notifyListeners();
+    } catch (e) {
+      print("Error updating profile picture: $e");
+    }
+  }
+
+  // Method to refresh user data from Firebase
+  Future<void> refreshUser() async {
+    if (_user != null) {
+      await _user!.reload(); // Reloads the user from Firebase
+      _user = FirebaseAuth.instance.currentUser; // Update local user data
+      notifyListeners(); // Notifies UI to rebuild with new data
+    }
   }
 
   /// Save device token (e.g., for FCM)
@@ -177,23 +277,22 @@ class UserProvider with ChangeNotifier {
   /// Initialize user status and preferences
   Future<void> _initialize() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isLoggedIn = prefs.getBool(LOGGED_IN) ?? false;
+    _isActiveRememberMe = prefs.getBool('remember_me') ?? false;
 
-    if (isLoggedIn) {
-      FirebaseAuth.instance.authStateChanges().listen((currentUser) async {
-        if (currentUser != null) {
-          _user = currentUser;
-          _userModel = await _userServices.getUserById(_user!.uid);
-          _status = Status.Authenticated;
-        } else {
-          _status = Status.Unauthenticated;
-        }
-        notifyListeners();
-      });
+    bool isLoggedIn = prefs.getBool(LOGGED_IN) ?? false;
+    if (isLoggedIn && _isActiveRememberMe) {
+      String? userId = prefs.getString(ID);
+      if (userId != null) {
+        _userModel = await _userServices.getUserById(userId);
+        _user = _auth.currentUser;
+        _status = Status.Authenticated;
+      } else {
+        _status = Status.Unauthenticated;
+      }
     } else {
       _status = Status.Unauthenticated;
-      notifyListeners();
     }
+    notifyListeners();
   }
 
   /// Save user data to preferences
@@ -220,12 +319,34 @@ class UserProvider with ChangeNotifier {
     phone.clear();
   }
 
-  void toggleRememberMe() {
+  void toggleRememberMe() async {
     _isActiveRememberMe = !_isActiveRememberMe;
-    //update();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('remember_me', _isActiveRememberMe);
+    notifyListeners();
   }
 
   void setRememberMe() {
     _isActiveRememberMe = true;
+  }
+
+  // Fetch trips for the currently logged-in driver
+  Future<void> fetchDriverTrips() async {
+    try {
+      if (_userModel == null) return; // Ensure user is logged in
+      String userId = _userModel!.id;
+
+      QuerySnapshot snapshot = await _firestore
+          .collection('trips')
+          .where('userId', isEqualTo: userId)
+          .orderBy('date', descending: true)
+          .get();
+
+      _trips =
+          snapshot.docs.map((doc) => TripModel.fromFirestore(doc)).toList();
+      notifyListeners();
+    } catch (e) {
+      print("Error fetching trips: $e");
+    }
   }
 }
