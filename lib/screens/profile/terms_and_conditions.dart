@@ -1,6 +1,9 @@
+import 'package:BucoRide/helpers/screen_navigation.dart';
+import 'package:BucoRide/screens/menu.dart';
 import 'package:BucoRide/utils/app_constants.dart';
 import 'package:flutter/material.dart';
 
+import '../../utils/dimensions.dart';
 import '../../widgets/app_bar/app_bar.dart';
 
 class TermsScreen extends StatelessWidget {
@@ -22,10 +25,10 @@ class TermsScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildSectionTitle("Welcome to Buco Driver!"),
-              const SizedBox(height: 10),
+              const SizedBox(height: Dimensions.paddingSizeExtraSmall),
               _buildParagraph(
                   "These Terms and Conditions govern your use of the Buco Driver app. By using our app, you agree to comply with these terms."),
-              const SizedBox(height: 20),
+              const SizedBox(height: Dimensions.paddingSizeSmall),
               _buildTermsSection("1. Acceptance of Terms",
                   "By accessing and using this app, you accept and agree to be bound by these Terms and Conditions."),
               _buildTermsSection("2. User Responsibilities",
@@ -42,12 +45,14 @@ class TermsScreen extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppConstants.lightPrimary,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 15),
+                        horizontal: 40, vertical: 12),
                   ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
+                  onPressed: () => changeScreen(context, Menu()),
+                  child: Text(
                     "Agree & Continue",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: Dimensions.fontSizeSmall),
                   ),
                 ),
               ),
@@ -85,7 +90,7 @@ class TermsScreen extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: Dimensions.fontSizeSmall,
               fontWeight: FontWeight.bold,
               color: Colors.black45,
             ),

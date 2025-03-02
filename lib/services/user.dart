@@ -12,6 +12,7 @@ class UserServices {
     required String name,
     required String email,
     required String phone,
+    required String photo,
     int votes = 0,
     int trips = 0,
     double rating = 0,
@@ -25,6 +26,7 @@ class UserServices {
         "email": email,
         "votes": votes,
         "trips": trips,
+        "photo": photo,
         "rating": rating,
         "position": position,
       });
@@ -56,6 +58,8 @@ class UserServices {
   // Get a user by ID
   Future<UserModel> getUserById(String id) {
     return _firebaseFirestore.collection(collection).doc(id).get().then((doc) {
+      print(doc);
+      print("🚗 🚗🚗 🚗🚗 🚗🚗 🚗🚗 🚗");
       return UserModel.fromSnapshot(doc);
     });
   }

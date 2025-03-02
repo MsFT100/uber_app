@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:BucoRide/helpers/screen_navigation.dart';
-import 'package:BucoRide/screens/menu.dart';
+import 'package:BucoRide/screens/home.dart';
 import 'package:BucoRide/utils/images.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
@@ -32,6 +33,7 @@ class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _hideSystemUI();
     if (!GetPlatform.isIOS) {
       _checkConnectivity();
     }
@@ -55,6 +57,10 @@ class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
+  void _hideSystemUI() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
   void _checkConnectivity() {
     _onConnectivityChanged = Connectivity()
         .onConnectivityChanged
@@ -62,12 +68,8 @@ class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
       isConnected = result.contains(ConnectivityResult.mobile) ||
           result.contains(ConnectivityResult.wifi);
 
-      // Remove existing SnackBar
-      ScaffoldMessenger.of(Get.context!).removeCurrentSnackBar();
-      ScaffoldMessenger.of(Get.context!).hideCurrentSnackBar();
-
       // Show updated SnackBar
-      ScaffoldMessenger.of(Get.context!).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: isConnected ? Colors.green : Colors.red,
           duration: Duration(seconds: isConnected ? 3 : 6000),
@@ -90,15 +92,15 @@ class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
     UserProvider auth = Provider.of<UserProvider>(context, listen: false);
     AppStateProvider appState =
         Provider.of<AppStateProvider>(context, listen: false);
-    await Future.delayed(Duration(seconds: 5)); // add delay for splash
 
+    await Future.delayed(Duration(seconds: 10)); // add delay for splash
+    while (auth.status == Status.Authenticating) {
+      await Future.delayed(
+          Duration(milliseconds: 100)); // Wait for authentication
+    }
     if (auth.status == Status.Authenticated) {
       // Navigate to Home if authenticated
-      changeScreenReplacement(
-          context,
-          Menu(
-            title: '',
-          ));
+      changeScreenReplacement(context, HomePage());
     } else {
       // Navigate to Login if not authenticated
       firstLaunch = await appState.checkIfFirstLaunch();

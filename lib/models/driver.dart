@@ -4,52 +4,78 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 class DriverModel {
   static const ID = "id";
   static const NAME = "name";
+  static const EMAIL = "email";
+  static const PHONE = "phone";
+  static const VOTES = "votes";
+  static const TRIPS = "trips";
+  static const RATING = "rating";
+  static const TOKEN = "token";
+  static const PHOTO = "photo";
+  static const BRAND = "brand";
+  static const MODEL = "model";
+  static const FUEL_TYPE = "fuelType";
+  static const LICENSE_PLATE = "licensePlate";
+  static const HAS_VEHICLE = "hasVehicle";
   static const LATITUDE = "latitude";
   static const LONGITUDE = "longitude";
   static const HEADING = "heading";
   static const POSITION = "position";
-  static const CAR = "car";
-  static const PLATE = "plate";
-  static const PHOTO = "photo";
-  static const RATING = "rating";
-  static const VOTES = "votes";
-  static const PHONE = "phone";
 
-  String _id = "";
-  String _name = "";
-  String _car = "";
-  String _plate = "";
-  String _photo = "";
-  String _phone = "";
+  late final String _id;
+  late final String _name;
+  late final String _email;
+  late final String _phone;
+  late final String _token;
+  late final String _photo;
+  late final String _brand;
+  late final String _model;
+  late final String _fuelType;
+  late final String _licensePlate;
+  late final bool _hasVehicle;
 
-  double _rating = 0.0;
-  int _votes = 0;
+  late final int _votes;
+  late final int _trips;
+  late final double _rating;
 
   DriverPosition _position = DriverPosition(lat: 0.0, lng: 0.0, heading: 0.0);
 
-  // Getters
-  String get id => _id;
+  //  getters
   String get name => _name;
-  String get car => _car;
-  String get plate => _plate;
-  String get photo => _photo;
+  String get email => _email;
+  String get id => _id;
   String get phone => _phone;
-  DriverPosition get position => _position;
-  double get rating => _rating;
   int get votes => _votes;
-
+  int get trips => _trips;
+  double get rating => _rating;
+  String get token => _token;
+  String get photo => _photo;
+  String get brand => _brand;
+  String get model => _model;
+  String get licensePlate => _licensePlate;
+  String get fuelType => _fuelType;
+  bool get hasVehicle => _hasVehicle;
+  DriverPosition get position => _position;
   DriverModel.fromSnapshot(DocumentSnapshot snapshot) {
     Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>? ?? {};
 
-    _id = data[ID] ?? "";
-    _name = data[NAME] ?? "Unknown Driver";
-    _car = data[CAR] ?? "Unknown Car";
-    _plate = data[PLATE] ?? "N/A";
-    _photo = data[PHOTO] ?? "";
-    _phone = data[PHONE] ?? "No Phone";
+    _name = data[NAME] ?? ''; // Default to an empty string
+    _email = data[EMAIL] ?? '';
+    _id = data[ID] ?? '';
+    _token = data[TOKEN] ?? '';
 
+    _hasVehicle = data[HAS_VEHICLE] ?? false;
+    _photo = data[PHOTO] ?? '';
+    _fuelType = data[FUEL_TYPE] ?? '';
+    _brand = data[BRAND] ?? '';
+    _model = data[MODEL] ?? '';
+    _licensePlate = data[LICENSE_PLATE] ?? '';
+    _phone = data[PHONE] ?? '';
+    _votes = data[VOTES] ?? 0; // Default to 0
+    _trips = data[TRIPS] ?? 0;
     _rating = (data[RATING] ?? 0).toDouble();
-    _votes = (data[VOTES] ?? 0);
+
+    //_rating = (data[RATING] ?? 0).toDouble();
+    //_votes = (data[VOTES] ?? 0);
 
     if (data[POSITION] != null) {
       _position = DriverPosition(

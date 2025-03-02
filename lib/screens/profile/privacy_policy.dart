@@ -1,6 +1,10 @@
+import 'package:BucoRide/helpers/screen_navigation.dart';
 import 'package:BucoRide/utils/app_constants.dart';
 import 'package:BucoRide/widgets/app_bar/app_bar.dart';
 import 'package:flutter/material.dart';
+
+import '../../utils/dimensions.dart';
+import '../menu.dart';
 
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
@@ -21,7 +25,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               Text(
                 "Privacy Policy",
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: Dimensions.fontSizeDefault,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
@@ -35,7 +39,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               Text(
                 "1. Information We Collect",
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: Dimensions.fontSizeDefault,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
@@ -48,7 +52,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               Text(
                 "2. How We Use Your Information",
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: Dimensions.fontSizeDefault,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
@@ -61,7 +65,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               Text(
                 "3. Sharing of Information",
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: Dimensions.fontSizeDefault,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
@@ -74,7 +78,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               Text(
                 "4. Data Security",
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: Dimensions.fontSizeDefault,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
@@ -87,7 +91,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               Text(
                 "5. Changes to This Policy",
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: Dimensions.fontSizeDefault,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
@@ -96,20 +100,22 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 "We may update this Privacy Policy periodically. Continued use of the app after changes implies your acceptance of the revised policy.",
                 style: TextStyle(fontSize: 16),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: Dimensions.paddingSize),
               Center(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppConstants.lightPrimary,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 15),
+                        horizontal: 40, vertical: 12),
                   ),
                   onPressed: () {
-                    Navigator.pop(context);
+                    changeScreen(context, Menu());
                   },
-                  child: const Text(
+                  child: Text(
                     "Agree & Continue",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: Dimensions.fontSizeSmall),
                   ),
                 ),
               ),

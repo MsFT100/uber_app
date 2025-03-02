@@ -140,11 +140,5 @@ class AppConstants {
   static const double limitOfPickedImageSizeInMB = 2;
   static const defaultTextSize = 18.0;
   static const defaultWeight = FontWeight.bold;
-  static const GOOGLE_MAPS_API_KEY = "AIzaSyBqD2lxHfrvXS6DszBaG1w-dHAXnArbbPE";
-  //static List<OnBoardingModel> onBoardPagerData = [
-  //  OnBoardingModel(title: 'on_boarding_1_title'.tr, image: 'assets/image/on_board_one.png'),
-  //  OnBoardingModel(title: 'on_boarding_2_title'.tr, image: 'assets/image/on_board_two.png'),
-  //  OnBoardingModel(title: 'on_boarding_3_title'.tr, image: 'assets/image/on_board_three.png'),
-  //  OnBoardingModel(title: 'on_boarding_4_title'.tr, image: 'assets/image/on_board_four.png'),
-  //];
+  static const GOOGLE_MAPS_API_KEY = "AIzaSyBX9cRFB3W5L1nedWRatvKJmrhwb-sC4bw";
 }

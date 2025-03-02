@@ -98,7 +98,8 @@ class Images {
   static const String splashBackgroundOne = 'assets/image/splash_one.png';
   static const String splashBackgroundTwo = 'assets/image/splash_two.png';
   static const String mapLocationIcon = 'assets/image/map_location_icon.png';
-  static const String markerLocationIcon = 'assets/image/marker_location_icon.png';
+  static const String markerLocationIcon =
+      'assets/image/marker_location_icon.png';
   static const String addNewAddress = 'assets/image/add_new_address.png';
   static const String other = 'assets/image/other.png';
   static const String office = 'assets/image/office.png';
@@ -169,7 +170,10 @@ class Images {
       'assets/image/traffic_online_icon.png';
   static const String microPhoneIcon = 'assets/image/micro_phone_icon.png';
   static const String newBidFareIcon = 'assets/image/new_bid_fare_icon.png';
-
+  static const String motorBikeIcon = 'assets/image/icons_motorbike.png';
+  static const String sedanIcon = 'assets/image/icons_sedan.png';
+  static const String vanIcon = 'assets/image/icons_van.png';
+  static const String tuk_tukIcon = 'assets/image/icons_tuk_tuk.png';
   //svg
 
   static const String animatedCar = 'assets/svg/animated_car.svg';

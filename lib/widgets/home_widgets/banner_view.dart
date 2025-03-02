@@ -12,10 +12,11 @@ class _BannerViewState extends State<BannerView> {
   int activeIndex = 0;
 
   final List<String> bannerImages = [
-    'assets/image/Buricode-banner.png',
-    'assets/image/Buricode-banner.png',
-    'assets/image/Buricode-banner.png', // Add more images here
-  ];
+  'https://firebasestorage.googleapis.com/v0/b/buricode-6e54c.firebasestorage.app/o/Banners%2FTaxi%20Business%20Card%20in%20Black%20Yellow%20Illustrative%20_style.png?alt=media&token=0d854dd3-4924-4ae5-aef2-44a3871e6fae',
+  'https://firebasestorage.googleapis.com/v0/b/buricode-6e54c.firebasestorage.app/o/Banners%2FTaxi%20Business%20Card%20in%20Black%20Yellow%20Illustrative%20_style.png?alt=media&token=0d854dd3-4924-4ae5-aef2-44a3871e6fae',
+  
+];
+
 
   @override
   Widget build(BuildContext context) {
@@ -50,10 +51,23 @@ class _BannerViewState extends State<BannerView> {
                   padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(15),
-                    child: Image.asset(
+                    child: Image.network(
                       bannerImages[index],
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                       width: MediaQuery.of(context).size.width,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)
+                                : null,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.asset('assets/image/placeholder.png', fit: BoxFit.cover);
+                      },
                     ),
                   ),
                 ),

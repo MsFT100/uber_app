@@ -1,3 +1,4 @@
+import 'package:BucoRide/helpers/constants.dart';
 import 'package:BucoRide/providers/location_provider.dart';
 import 'package:BucoRide/widgets/scroll_sheet_bar.dart';
 import 'package:flutter/material.dart';
@@ -7,27 +8,77 @@ import 'package:provider/provider.dart';
 import '../../helpers/style.dart';
 import '../../providers/app_state.dart';
 import '../../providers/user.dart';
+import '../../utils/app_constants.dart';
 import '../../utils/dimensions.dart';
 import '../../utils/images.dart';
 import '../custom_text.dart';
 
-class PaymentMethodSelectionWidget extends StatelessWidget {
+class PaymentMethodSelectionWidget extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldState;
 
   const PaymentMethodSelectionWidget({super.key, required this.scaffoldState});
 
   @override
-  Widget build(BuildContext context) {
-    final AppStateProvider appState = Provider.of<AppStateProvider>(context);
-    final UserProvider userProvider = Provider.of<UserProvider>(context);
-    final locationProvider = Provider.of<LocationProvider>(context);
-    // Update ridePrice to be 100 per kilometer
+  State<PaymentMethodSelectionWidget> createState() =>
+      _PaymentMethodSelectionWidgetState();
+}
+
+class _PaymentMethodSelectionWidgetState
+    extends State<PaymentMethodSelectionWidget> {
+  int selectedIndex = -1; // No selection by default
+  String selectedVehicleLabel = ""; // Store selected vehicle name
+
+  void selectVehicle(int index) {
+    setState(() {
+      selectedIndex = index;
+      selectedVehicleLabel = vehicles[index]["label"]; // Assign the label
+      print("Selected Vehicle: $selectedVehicleLabel");
+      print("Selected Index:= $selectedIndex");
+      changeRidePrice(index);
+    });
+  }
+
+  void changeRidePrice(int vehicleIndex) {
+    final AppStateProvider appState =
+        Provider.of<AppStateProvider>(context, listen: false);
+    final locationProvider =
+        Provider.of<LocationProvider>(context, listen: false);
+
+    // Get the distance in KM
     final double distanceInKm = double.tryParse(locationProvider
                 .routeModel?.distance.text
                 .replaceAll(RegExp(r'[^0-9.]'), '') ??
             '0') ??
         0;
-    appState.ridePrice = distanceInKm * 100;
+
+    // Set the correct price per kilometer and base rate
+    double rideMultiplier = (vehicleIndex == 0)
+        ? price_per_kilometer_motorbike
+        : price_per_kilometer;
+
+    double baseRate = (vehicleIndex == 0) ? base_rate_motorbike : base_rate;
+
+    // Correct price calculation (Base rate + Distance * Rate)
+    appState.ridePrice = baseRate + (distanceInKm * rideMultiplier);
+    appState.rideRequestModel?.distance['value'] = appState.ridePrice;
+    appState.vehicleType = selectedVehicleLabel;
+    print("Updated Ride Price: ${appState.ridePrice}");
+  }
+
+  // List of vehicle options
+  final List<Map<String, dynamic>> vehicles = [
+    {"icon": Images.motorBikeIcon, "label": "Go Moto"},
+    {"icon": Images.sedanIcon, "label": "Car"},
+    {"icon": Images.vanIcon, "label": "Van"},
+    {"icon": Images.tuk_tukIcon, "label": "TukTuk"},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final AppStateProvider appState =
+        Provider.of<AppStateProvider>(context, listen: true);
+    final UserProvider userProvider = Provider.of<UserProvider>(context);
+    final locationProvider = Provider.of<LocationProvider>(context);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.65,
@@ -56,101 +107,69 @@ class PaymentMethodSelectionWidget extends StatelessWidget {
               children: [
                 ScrollSheetBar(),
                 const SizedBox(height: Dimensions.paddingSize),
+
+                ///Types of transport
                 Container(
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      // Delivery Button
-                      Container(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            SizedBox(width: 10),
-                            // GO MOTO Button
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey, // Light grey background
-                                borderRadius: BorderRadius.circular(
-                                    12), // Smooth rounded borders
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: List.generate(vehicles.length, (index) {
+                      return GestureDetector(
+                          onTap: () => selectVehicle(index),
+                          child: AnimatedContainer(
+                            duration: Duration(milliseconds: 300),
+                            width: 90,
+                            height: 120,
+                            padding:
+                                EdgeInsets.all(Dimensions.paddingSizeSmall),
+                            decoration: BoxDecoration(
+                              color: selectedIndex == index
+                                  ? Colors.yellow.shade600 // Highlighted color
+                                  : Colors.grey.shade300, // Default color
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: selectedIndex == index
+                                    ? Colors.yellow
+                                    : Colors.transparent,
+                                width: 3,
                               ),
-                              padding: EdgeInsets.all(
-                                  8), // Padding inside the container
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {},
-                                    child: Container(
-                                      width: 70, // Adjust as needed
-                                      height: 50,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(
-                                            12), // Match outer radius
+                              boxShadow: selectedIndex == index
+                                  ? [
+                                      BoxShadow(
+                                        color: Colors.yellow.shade300,
+                                        blurRadius: 8,
+                                        spreadRadius: 2,
                                       ),
-                                      child: Image.asset(Images.bike,
-                                          fit: BoxFit.contain),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                      height:
-                                          5), // Space between image and text
-                                  Text(
-                                    "Go Moto",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                        fontSize: Dimensions.fontSizeDefault),
-                                  ),
-                                ],
-                              ),
+                                    ]
+                                  : [],
                             ),
-                            SizedBox(width: 20), // Space between buttons
-                            // Delivery Button
-                            Container(
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(209, 158, 158,
-                                    158), // Light grey background
-                                borderRadius: BorderRadius.circular(
-                                    12), // Smooth rounded borders
-                              ),
-                              padding: EdgeInsets.all(
-                                  8), // Padding inside the container
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      //TODO Implement here
-                                    },
-                                    child: Container(
-                                      width: 70, // Adjust as needed
-                                      height: 50,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(
-                                            12), // Match outer radius
-                                      ),
-                                      child: Image.asset(Images.bikeTop,
-                                          fit: BoxFit.contain),
-                                    ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  vehicles[index]["icon"],
+                                  width: 50,
+                                  height: 50,
+                                  fit: BoxFit.contain,
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  vehicles[index]["label"],
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: Dimensions.fontSizeSmall,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  SizedBox(
-                                      height:
-                                          5), // Space between image and text
-                                  Text(
-                                    "Delivery",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                        fontSize: Dimensions.fontSizeDefault),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
+                          ));
+                    }),
                   ),
                 ),
+
                 const SizedBox(height: Dimensions.paddingSize),
+
                 CustomText(
                   text: "Trip Summary",
                   size: 20,
@@ -277,7 +296,7 @@ class PaymentMethodSelectionWidget extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Image.asset(
-                          Images.distanceCalculated,
+                          Images.farePrice,
                           width: Dimensions.iconSizeExtraLarge,
                           height: Dimensions.iconSizeExtraLarge,
                         ),
@@ -301,19 +320,17 @@ class PaymentMethodSelectionWidget extends StatelessWidget {
                 const Divider(height: 30, thickness: 1),
                 CustomText(
                   text: "Select Payment Method",
-                  size: 18,
+                  size: Dimensions.fontSizeSmall,
                   weight: FontWeight.bold,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: Dimensions.paddingSize),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     OutlinedButton.icon(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text("Method not available!")),
-                        );
+                        appState.showCustomSnackBar(context,
+                            "Method not available!", AppConstants.darkPrimary);
                       },
                       icon: const Icon(Icons.credit_card),
                       label: const CustomText(text: "Card"),
@@ -338,7 +355,9 @@ class PaymentMethodSelectionWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 appState.lookingForDriver
-                    ? const Center(child: SpinKitWave(color: black, size: 30))
+                    ? Center(
+                        child: SpinKitFoldingCube(
+                            color: black, size: Dimensions.fontSizeSmall))
                     : Column(
                         children: [
                           SizedBox(
@@ -347,15 +366,26 @@ class PaymentMethodSelectionWidget extends StatelessWidget {
                             child: ElevatedButton(
                               onPressed: () async {
                                 if (userProvider.userModel == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            "User information is missing!")),
-                                  );
+                                  appState.showCustomSnackBar(
+                                      context,
+                                      "User information is missing!",
+                                      Colors.redAccent);
                                   return;
                                 }
+                                if (selectedIndex == -1) {
+                                  appState.showCustomSnackBar(
+                                      context,
+                                      "Please select a method of transport!",
+                                      AppConstants.darkPrimary);
+                                  return;
+                                }
+                                locationProvider.show = Show.SEARCHING_DRIVER;
+
+                                print(
+                                    "Updated show state: ${locationProvider.show}");
 
                                 appState.requestDriver(
+                                  vehicleType: appState.vehicleType,
                                   distance: locationProvider
                                       .routeModel!.distance
                                       .toJson(),
@@ -370,8 +400,6 @@ class PaymentMethodSelectionWidget extends StatelessWidget {
                                   destinationCoordinates:
                                       locationProvider.destinationCoordinates,
                                 );
-                                //appState.changeMainContext(context);
-                                locationProvider.show = Show.SEARCHING_DRIVER;
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: black,

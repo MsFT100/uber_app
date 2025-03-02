@@ -1,17 +1,18 @@
 import 'package:BucoRide/helpers/screen_navigation.dart';
+import 'package:BucoRide/providers/app_state.dart';
 import 'package:BucoRide/providers/location_provider.dart';
 import 'package:BucoRide/utils/app_constants.dart';
 import 'package:BucoRide/utils/images.dart';
-import 'package:BucoRide/widgets/address_btn.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/user.dart';
+import '../../screens/dashboard/Address/address_btn.dart';
 import '../../screens/home.dart';
-import '../../screens/parcel_page.dart';
+import '../../screens/parcels/parcel_page.dart';
 import '../../utils/dimensions.dart';
 import '../driver_map.dart';
-import '../loading_location.dart';
+import '../loading_widgets/loading_location.dart';
 import 'banner_view.dart';
 import 'home_search_screen.dart';
 
@@ -29,6 +30,7 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<LocationProvider>(context, listen: false).fetchLocation();
       Provider.of<LocationProvider>(context, listen: false).listenToDrivers();
+      Provider.of<AppStateProvider>(context, listen: false).saveDeviceToken();
     });
   }
 
@@ -40,43 +42,41 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
   @override
   Widget build(BuildContext context) {
     UserProvider userProvider = Provider.of<UserProvider>(context);
-    final locationProvider = Provider.of<LocationProvider>(context);
+    final locationProvider =
+        Provider.of<LocationProvider>(context, listen: true);
     final position = locationProvider.currentPosition;
     final address = locationProvider.locationAddress;
 
+    if (position == null) {
+      locationProvider.fetchLocation();
+      return LoadingLocationScreen();
+    }
     return Scaffold(
       backgroundColor: Colors.grey[200],
       body: RefreshIndicator(
         onRefresh: _refreshHome,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              _buildHeader(userProvider, address),
-              const SizedBox(height: 20),
-              Padding(
+        child: Column(
+          children: [
+            _buildHeader(userProvider, address),
+            SizedBox(height: Dimensions.paddingSizeExtraSmall),
+            Expanded(
+              child: ListView(
                 padding: EdgeInsets.all(Dimensions.paddingSize),
-                child: SizedBox(
-                  // ADD THIS
-                  width: double.infinity, // Ensures full width
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min, // Prevents infinite height
-                    children: [
-                      BannerView(),
-                      const SizedBox(height: Dimensions.paddingSize),
-                      _buildButtons(locationProvider),
-                      const SizedBox(height: Dimensions.paddingSize),
-                      HomeSearchWidget(),
-                      const SizedBox(height: Dimensions.paddingSize),
-                      position != null ? MapWidget() : LoadingLocationScreen(),
-                      const SizedBox(height: Dimensions.paddingSize),
-                      HomeMyAddress(),
-                    ],
-                  ),
-                ),
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  BannerView(),
+                  const SizedBox(height: Dimensions.paddingSize),
+                  _buildButtons(locationProvider),
+                  const SizedBox(height: Dimensions.paddingSize),
+                  HomeSearchWidget(),
+                  const SizedBox(height: Dimensions.paddingSize),
+                  MapWidget(),
+                  const SizedBox(height: Dimensions.paddingSize),
+                  HomeMyAddress(),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -84,12 +84,12 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
 
   Widget _buildHeader(UserProvider userProvider, String? address) {
     return Container(
-      height: 180,
+      height: 140,
       decoration: BoxDecoration(
         color: AppConstants.lightPrimary,
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
+          bottomLeft: Radius.circular(25),
+          bottomRight: Radius.circular(25),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
@@ -130,7 +130,14 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
         children: [
           _buildMenuButton("Go Moto", Images.bike, () {
             locationProvider.show = Show.DESTINATION_SELECTION;
-            changeScreen(context, MyHomePage(title: "title"));
+            changeScreen(context, HomePage());
+          }),
+          SizedBox(
+            width: Dimensions.paddingSize,
+          ),
+          _buildMenuButton("Car", Images.car, () {
+            locationProvider.show = Show.DESTINATION_SELECTION;
+            changeScreen(context, HomePage());
           }),
           SizedBox(
             width: Dimensions.paddingSize,

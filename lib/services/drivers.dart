@@ -16,6 +16,25 @@ class DriverService {
       },
     );
   }
+  Stream<List<DriverPosition>> getDriverPositions() {
+  return _firestore.collection(collection).snapshots().map((snapshot) {
+    return snapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>? ?? {};
+
+      // Extract position safely
+      if (data[DriverModel.POSITION] != null) {
+        return DriverPosition(
+          lat: (data[DriverModel.POSITION][DriverModel.LATITUDE] ?? 0.0).toDouble(),
+          lng: (data[DriverModel.POSITION][DriverModel.LONGITUDE] ?? 0.0).toDouble(),
+          heading: (data[DriverModel.POSITION][DriverModel.HEADING] ?? 0.0).toDouble(),
+        );
+      }
+
+      return DriverPosition(lat: 0.0, lng: 0.0, heading: 0.0); // Default if missing
+    }).toList();
+  });
+}
+
 
   void _listenToDrivers() {
     FirebaseFirestore.instance

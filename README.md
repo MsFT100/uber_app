@@ -9,3 +9,4 @@ There are mainly two aspects to consider in order to have this project working:
 1. Don't forget to add your own google maps api into the androidmanifest.xml file
 2. This is not requered but you can conect the project to your firebase project by chamging the google-services.json file
 
+## <a target="_blank" href="https://icons8.com/icon/cUnsXrpRV0dh/motorcycle">Motorbike</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>

@@ -1,13 +1,13 @@
 import 'package:BucoRide/providers/location_provider.dart';
 import 'package:BucoRide/widgets/trip_widgets/Searching_for_drivers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/constants.dart';
 import '../helpers/style.dart';
-import '../providers/app_state.dart';
 import '../providers/user.dart';
-import '../widgets/custom_text.dart';
 import '../widgets/trip_draggable.dart';
 import '../widgets/trip_widgets/destination_selection.dart';
 import '../widgets/trip_widgets/driver_found.dart';
@@ -15,20 +15,22 @@ import '../widgets/trip_widgets/payment_method_selection.dart';
 import '../widgets/trip_widgets/pickup_selection_widget.dart';
 import 'map.dart';
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({super.key, required this.title});
-  final String title;
+class HomePage extends StatefulWidget {
+  HomePage({
+    super.key,
+  });
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _HomePageState createState() => _HomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _homeScaffoldKey = GlobalKey<ScaffoldState>();
   @override
   void initState() {
     super.initState();
     _deviceToken();
+    _restoreSystemUI();
   }
 
   _deviceToken() async {
@@ -40,10 +42,15 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void _restoreSystemUI() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+        overlays: [SystemUiOverlay.bottom, SystemUiOverlay.top]);
+  }
+
   @override
   Widget build(BuildContext context) {
-    AppStateProvider appState = Provider.of<AppStateProvider>(context);
-    final locationProvider = Provider.of<LocationProvider>(context);
+    final locationProvider =
+        Provider.of<LocationProvider>(context, listen: true);
 
     return Scaffold(
       key: _homeScaffoldKey,
@@ -51,54 +58,30 @@ class _MyHomePageState extends State<MyHomePage> {
         children: [
           MapScreen(),
           Visibility(
-            visible: locationProvider.show == Show.DRIVER_FOUND,
-            child: Positioned(
-                top: 60,
-                left: 15,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        child: appState.driverArrived
-                            ? Container(
-                                color: green,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: CustomText(
-                                    text: "Meet driver at the pick up location",
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              )
-                            : Container(
-                                color: primary,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: CustomText(
-                                    text: "Meet driver at the pick up location",
-                                    weight: FontWeight.w300,
-                                    color: white,
-                                  ),
-                                ),
-                              ),
-                      ),
-                    ],
-                  ),
-                )),
-          ),
-          Visibility(
             visible: locationProvider.show == Show.TRIP,
             child: Positioned(
                 top: 60,
-                left: MediaQuery.of(context).size.width / 7,
+                left: MediaQuery.of(context).size.width / 5,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 30),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(border_radius),
+                            topRight: Radius.circular(border_radius),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
                         child: Container(
                           color: primary,
                           child: Padding(
@@ -106,7 +89,8 @@ class _MyHomePageState extends State<MyHomePage> {
                               child: RichText(
                                   text: TextSpan(children: [
                                 TextSpan(
-                                    text: "You\'ll reach your desiation in \n",
+                                    text:
+                                        "You\'ll reach your destination in \n",
                                     style:
                                         TextStyle(fontWeight: FontWeight.w300)),
                                 TextSpan(
@@ -142,13 +126,12 @@ class _MyHomePageState extends State<MyHomePage> {
           Visibility(
               visible: locationProvider.show == Show.DRIVER_FOUND,
               child: DriverFoundWidget()),
-
           //  ANCHOR Draggable DRIVER
           Visibility(
               visible: locationProvider.show == Show.TRIP, child: TripWidget()),
           Visibility(
               visible: locationProvider.show == Show.SEARCHING_DRIVER,
-              child: SearchingForDrivers())
+              child: SearchingForDrivers()),
         ],
       ),
     );

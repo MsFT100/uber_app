@@ -9,6 +9,7 @@ class RideRequestServices {
     required String id,
     required String userId,
     required String username,
+    required String vehicleType,
     required Map<String, dynamic> destination,
     required Map<String, dynamic> position,
     required Map<String, dynamic> distance,
@@ -19,9 +20,10 @@ class RideRequestServices {
       "username": username,
       "driverId": "",
       "position": position,
-      "status": 'pending', // Request status: pending, accepted, cancelled
+      "status": 'PENDING', // Request status: pending, accepted, cancelled
       "destination": destination,
       "distance": distance,
+      "type": vehicleType,
       "createdAt": FieldValue.serverTimestamp(),
     });
     print("=======================Successfully Created Ride Request");

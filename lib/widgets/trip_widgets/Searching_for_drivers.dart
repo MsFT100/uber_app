@@ -41,9 +41,18 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
 
   @override
   Widget build(BuildContext context) {
-    final AppStateProvider appState = Provider.of<AppStateProvider>(context);
-    final locationProvider = Provider.of<LocationProvider>(context);
+    final AppStateProvider appState =
+        Provider.of<AppStateProvider>(context, listen: true);
+    final locationProvider =
+        Provider.of<LocationProvider>(context, listen: true);
     final UserProvider userProvider = Provider.of<UserProvider>(context);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (appState.driverFound) {
+        locationProvider.show =
+            Show.DRIVER_FOUND; // Update after build finishes
+      }
+    });
 
     return DraggableScrollableSheet(
       initialChildSize: 0.3, // Starts at 30% of the screen
@@ -78,8 +87,37 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                   const SizedBox(height: 20),
 
                   // Show different UI based on search status
-                  appState.noDriversFound
+                  appState.lookingForDriver
                       ? Column(
+                          children: [
+                            // Animated searching text
+                            AnimatedBuilder(
+                              animation: _animation,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: _animation.value,
+                                  child: Text(
+                                    "Searching for a driver...",
+                                    style: TextStyle(
+                                        fontSize: Dimensions.fontSizeLarge,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            const SizedBox(
+                                height: Dimensions.paddingSizeExtraLarge),
+                            const Center(
+                              child: // Searching animation (Loading Indicator)
+                                  const SpinKitFoldingCube(
+                                color: Colors.black,
+                                size: Dimensions.iconSizeExtraLarge,
+                              ),
+                            )
+                          ],
+                        )
+                      : Column(
                           children: [
                             const Icon(Icons.warning,
                                 size: 50, color: Colors.red),
@@ -95,6 +133,7 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                               child: ElevatedButton(
                                 onPressed: () {
                                   appState.requestDriver(
+                                    vehicleType: appState.vehicleType,
                                     distance: locationProvider
                                         .routeModel!.distance
                                         .toJson(),
@@ -133,35 +172,6 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                             ),
                           ],
                         )
-                      : Column(
-                          children: [
-                            // Animated searching text
-                            AnimatedBuilder(
-                              animation: _animation,
-                              builder: (context, child) {
-                                return Transform.scale(
-                                  scale: _animation.value,
-                                  child: Text(
-                                    "Searching for a driver...",
-                                    style: TextStyle(
-                                        fontSize: Dimensions.fontSizeLarge,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                );
-                              },
-                            ),
-
-                            const SizedBox(
-                                height: Dimensions.paddingSizeExtraLarge),
-                            const Center(
-                              child: // Searching animation (Loading Indicator)
-                                  const SpinKitFoldingCube(
-                                color: Colors.black,
-                                size: Dimensions.iconSizeExtraLarge,
-                              ),
-                            )
-                          ],
-                        ),
                 ],
               ),
 

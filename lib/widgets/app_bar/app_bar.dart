@@ -1,5 +1,7 @@
-import 'package:BucoRide/utils/app_constants.dart';
 import 'package:flutter/material.dart';
+
+import '../../utils/app_constants.dart';
+import '../../utils/dimensions.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -18,7 +20,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       title: Text(
         title,
-        style: TextStyle(fontSize: 20, fontWeight: AppConstants.defaultWeight),
+        style: TextStyle(
+          fontSize: Dimensions.fontSizeLarge,
+          fontWeight: AppConstants.defaultWeight,
+        ),
       ),
       centerTitle: centerTitle,
       automaticallyImplyLeading: showNavBack,

@@ -1,333 +1,325 @@
-import 'package:BucoRide/helpers/screen_navigation.dart';
-import 'package:BucoRide/helpers/style.dart';
-import 'package:BucoRide/providers/user.dart';
+import 'package:BucoRide/helpers/constants.dart';
+import 'package:BucoRide/providers/app_state.dart';
+import 'package:BucoRide/screens/auth/forgot_password.dart';
+import 'package:BucoRide/screens/auth/phone_login.dart';
 import 'package:BucoRide/screens/auth/registration.dart';
-import 'package:BucoRide/screens/menu.dart';
-import 'package:BucoRide/utils/app_constants.dart';
-import 'package:BucoRide/widgets/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
+import '../../helpers/screen_navigation.dart';
+import '../../providers/user.dart';
+import '../../utils/app_constants.dart';
 import '../../utils/dimensions.dart';
 import '../../utils/images.dart';
+import '../../widgets/loading_widgets/loading.dart';
+import '../menu.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _loginScaffoldKey = GlobalKey<ScaffoldState>();
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
-  final phoneNode = FocusNode();
-  final passwordNode = FocusNode();
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 800),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeIn,
+      ),
+    );
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<UserProvider>(context);
-
+    final appState = Provider.of<AppStateProvider>(context);
     return Scaffold(
       key: _loginScaffoldKey,
       backgroundColor: AppConstants.lightPrimary,
       body: authProvider.status == Status.Authenticating
           ? Loading()
           : SafeArea(
-              child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Column(children: [
-                        Image.asset(Images.logoWithName, height: 75),
-                        const SizedBox(
-                          height: 8.0,
-                        ),
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+              child: _fadeAnimation == null
+                  ? Center(
+                      child: Loading()) // Avoid using it before initialization
+                  : FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding:
+                              const EdgeInsets.all(Dimensions.paddingSizeSmall),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                '${'Welcome to'.tr} ' + AppConstants.appName,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  fontSize: 24.0,
-                                ),
-                              ),
-                              Image.asset(Images.hand,
-                                  width: 40), // Ensure you have this image
-                            ]),
-                      ]),
-                      SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.06),
-                      Text(
-                        'Log in'.tr,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontSize: 32.0,
-                        ),
-                      ),
-                      const SizedBox(height: 8.0),
-                      Text(
-                        'Please login to your account.',
-                        style: TextStyle(
-                          color: Theme.of(context).hintColor,
-                          fontSize: 16.0,
-                        ),
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: 16.0),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Container(
-                          decoration: BoxDecoration(
-                              border: Border.all(color: white),
-                              borderRadius: BorderRadius.circular(10)),
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 10),
-                            child: TextFormField(
-                              controller: authProvider.email,
-                              decoration: InputDecoration(
-                                  hintStyle: TextStyle(color: white),
-                                  border: InputBorder.none,
-                                  hintText: "Email",
-                                  icon: Icon(
-                                    Icons.email,
-                                    color: white,
-                                  )),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Container(
-                          decoration: BoxDecoration(
-                              border: Border.all(color: white),
-                              borderRadius: BorderRadius.circular(10)),
-                          child: Padding(
-                            padding: EdgeInsets.only(left: 10),
-                            child: TextFormField(
-                              controller: authProvider.password,
-                              decoration: InputDecoration(
-                                  hintStyle: TextStyle(color: white),
-                                  border: InputBorder.none,
-                                  hintText: "Password",
-                                  icon: Icon(
-                                    Icons.lock,
-                                    color: white,
-                                  )),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: InkWell(
-                              onTap: () => authProvider
-                                  .toggleRememberMe(), // Makes entire row clickable
-                              child: Row(
+                              Column(
                                 children: [
-                                  GestureDetector(
-                                    onTap: () =>
-                                        authProvider.toggleRememberMe(),
-                                    child: Container(
-                                      width: Dimensions.iconSizeMedium,
-                                      height: Dimensions.iconSizeMedium,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                            color: Colors.blueAccent, width: 2),
-                                        borderRadius: BorderRadius.circular(5),
-                                        color: authProvider.isActiveRememberMe
-                                            ? Colors.blueAccent
-                                            : Colors.transparent,
+                                  const SizedBox(
+                                      height: Dimensions.paddingSizeExtraLarge),
+                                  Image.asset(Images.logoWithName, height: 75),
+                                  const SizedBox(height: 8.0),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '${'Welcome to'.tr} ' +
+                                            AppConstants.appName,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context)
+                                              .primaryColorLight,
+                                          fontSize: 20.0,
+                                        ),
                                       ),
-                                      child: authProvider.isActiveRememberMe
-                                          ? Icon(Icons.check,
-                                              color: Colors.white,
-                                              size:
-                                                  18) // Blue tick when checked
-                                          : null,
-                                    ),
+                                      Image.asset(Images.hand, width: 40),
+                                    ],
                                   ),
                                   const SizedBox(
-                                      width: Dimensions.paddingSizeSmall),
-                                  GestureDetector(
-                                    onTap: () =>
-                                        authProvider.toggleRememberMe(),
+                                      height: Dimensions.paddingSize),
+                                  Text(
+                                    'Please login to your account.',
+                                    style: TextStyle(
+                                      color: Theme.of(context).hintColor,
+                                      fontSize: Dimensions.fontSizeSmall,
+                                    ),
+                                    maxLines: 2,
+                                  ),
+                                ],
+                              ),
+                              SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.1),
+                              _buildTextField(authProvider.email, 'Email',
+                                  Icons.email, false),
+                              _buildTextField(authProvider.password, 'Password',
+                                  Icons.lock, true),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: InkWell(
+                                      onTap: () => authProvider
+                                          .toggleRememberMe(), // Makes entire row clickable
+                                      child: Row(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () =>
+                                                authProvider.toggleRememberMe(),
+                                            child: Container(
+                                              width: Dimensions.iconSizeMedium,
+                                              height: Dimensions.iconSizeMedium,
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color: Colors.blueAccent,
+                                                    width: 1),
+                                                borderRadius:
+                                                    BorderRadius.circular(5),
+                                                color: authProvider
+                                                        .isActiveRememberMe
+                                                    ? Colors.blueAccent
+                                                    : Colors.transparent,
+                                              ),
+                                              child: authProvider
+                                                      .isActiveRememberMe
+                                                  ? Icon(Icons.check,
+                                                      color: Colors.white,
+                                                      size:
+                                                          18) // Blue tick when checked
+                                                  : null,
+                                            ),
+                                          ),
+                                          const SizedBox(
+                                              width:
+                                                  Dimensions.paddingSizeSmall),
+                                          GestureDetector(
+                                            onTap: () =>
+                                                authProvider.toggleRememberMe(),
+                                            child: Text(
+                                              'remember me'.tr,
+                                              style: TextStyle(
+                                                  fontSize: Dimensions
+                                                      .fontSizeDefault),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      changeScreen(
+                                          context, ForgotPasswordScreen());
+                                    },
                                     child: Text(
-                                      'remember me'.tr,
+                                      'forgot password'.tr,
                                       style: TextStyle(
-                                          fontSize: Dimensions.fontSizeDefault),
+                                        color: Colors.black,
+                                        fontSize: Dimensions.fontSizeDefault,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              //Get.to(ForgotPasswordScreen());
-                            },
-                            child: Text(
-                              'forgot password'.tr,
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: Dimensions.fontSizeDefault,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      authProvider.status == Status.Authenticating
-                          ? Center(
-                              child: CircularProgressIndicator(
-                                color: Theme.of(context).primaryColor,
-                                strokeWidth: 2.0,
-                              ),
-                            )
-                          : SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  String resultMessage =
-                                      await authProvider.signIn();
-                                  if (resultMessage != "Success") {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(resultMessage),
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  authProvider.clearController();
-                                  changeScreenReplacement(
-                                      context,
-                                      Menu(
-                                        title: 'Home',
-                                      ));
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  shape: StadiumBorder(),
-                                  padding: EdgeInsets.symmetric(vertical: 14.0),
-                                ),
-                                child: Text(
-                                  'Log in'.tr,
-                                  style: TextStyle(
-                                    fontSize: Dimensions.fontSizeLarge,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                      const SizedBox(height: 16.0),
-                      Row(
-                        children: [
-                          const Expanded(child: Divider(thickness: 0.1)),
-                          Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Text('or'.tr,
-                                style: TextStyle(
-                                    color: Theme.of(context).hintColor)),
-                          ),
-                          const Expanded(child: Divider(thickness: 0.1)),
-                        ],
-                      ),
-                      const SizedBox(height: 16.0),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            authProvider.signInWithGoogle();
-                          },
-                          icon: Image.asset(
-                            'assets/image/google_icon.png', // Add a Google logo image in the assets folder
-                            height: 24.0,
-                            width: 24.0,
-                          ),
-                          label: Text(
-                            'Sign In with Google'.tr,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors
-                                .white, // White background like Google's button
-                            side: BorderSide(
-                                color: Colors.grey.shade300), // Thin border
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            padding: EdgeInsets.symmetric(vertical: 12.0),
-                            elevation: 2, // Subtle shadow for a raised effect
+                              const SizedBox(
+                                  height: Dimensions.paddingSizeSmall),
+                              _buildLoginButton(authProvider, appState),
+                              const SizedBox(
+                                  height: Dimensions.paddingSizeSmall),
+                              _buildDivider(),
+                              const SizedBox(
+                                  height: Dimensions.paddingSizeSmall),
+                              _buildOtpLoginButton(),
+                              const SizedBox(
+                                  height: Dimensions.paddingSizeSmall),
+                              _buildRegisterLink(context),
+                            ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16.0),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            //Get.to(OtpLoginScreen(fromSignIn: true));
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors
-                                .white, // White background like Google's button
-                            side: BorderSide(
-                                color: Colors.grey.shade300), // Thin border
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            padding: EdgeInsets.symmetric(vertical: 12.0),
-                            elevation: 2, // Subtle shadow for a raised effect
-                          ),
-                          child: Text(
-                            'OTP Login'.tr,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16.0),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('${'Create an account'.tr} ',
-                              style: TextStyle(
-                                  color: Theme.of(context).hintColor)),
-                          TextButton(
-                            onPressed: () {
-                              changeScreen(context, RegistrationScreen());
-                            },
-                            child: Text(
-                              'Register here',
-                              style: TextStyle(
-                                decoration: TextDecoration.underline,
-                                color: Theme.of(context).primaryColor,
-                                fontSize: 16.0,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ]),
+                    ),
+            ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label,
+      IconData icon, bool obscureText) {
+    return Padding(
+        padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
+        child: SizedBox(
+          width: double.infinity,
+          child: TextFormField(
+            controller: controller,
+            obscureText: obscureText,
+            style: TextStyle(fontSize: Dimensions.fontSizeSmall),
+            decoration: InputDecoration(
+              labelText: label,
+              filled: true,
+              fillColor: Colors.white,
+              labelStyle: TextStyle(fontSize: Dimensions.fontSizeSmall),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(border_radius),
+                borderSide: BorderSide(color: Colors.black, width: 1),
               ),
-            )),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(border_radius),
+                borderSide: BorderSide(color: Colors.black, width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(border_radius),
+                borderSide: BorderSide(color: Colors.black, width: 2.5),
+              ),
+              prefixIcon: Icon(icon, color: Colors.grey[700]),
+            ),
+          ),
+        ));
+  }
+
+  Widget _buildLoginButton(
+      UserProvider authProvider, AppStateProvider appState) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () async {
+          String resultMessage = await authProvider.signIn();
+          if (resultMessage != "Success") {
+            appState.showCustomSnackBar(
+                context, resultMessage, AppConstants.darkPrimary);
+          } else {
+            authProvider.clearController();
+            changeScreenReplacement(context, Menu());
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blueAccent,
+          shape: StadiumBorder(),
+          padding: EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall),
+        ),
+        child: Text(
+          'Log in'.tr,
+          style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: Dimensions.fontSizeSmall),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Row(
+      children: [
+        const Expanded(child: Divider(thickness: 0.1)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Text('or'.tr, style: TextStyle(color: Colors.grey)),
+        ),
+        const Expanded(child: Divider(thickness: 0.1)),
+      ],
+    );
+  }
+
+  Widget _buildOtpLoginButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: () {
+          changeScreen(context, PhoneLoginScreen());
+        },
+        style: OutlinedButton.styleFrom(
+          shape: StadiumBorder(),
+          side: BorderSide(color: Colors.blueAccent),
+          padding: EdgeInsets.symmetric(vertical: 14.0),
+        ),
+        child: Text(
+          'OTP Login'.tr,
+          style: TextStyle(
+              fontWeight: FontWeight.bold, fontSize: Dimensions.fontSizeSmall),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRegisterLink(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text('${'Create an account'.tr} '),
+        TextButton(
+          onPressed: () => changeScreen(context, RegistrationScreen()),
+          child: Text(
+            'Register here',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.underline,
+                color: Colors.blue),
+          ),
+        ),
+      ],
     );
   }
 }

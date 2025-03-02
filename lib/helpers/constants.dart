@@ -1,15 +1,19 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:googlemaps_flutter_webservices/places.dart';
 
-//const GOOGLE_MAPS_API_KEY = "AIzaSyBqD2lxHfrvXS6DszBaG1w-dHAXnArbbPE";
-const GOOGLE_MAPS_API_KEY = "AIzaSyAGDlcfxXtt2rmk_GrytWTVRGMHngzdHYM";
+const GOOGLE_MAPS_API_KEY = "AIzaSyBX9cRFB3W5L1nedWRatvKJmrhwb-sC4bw";
 const COUNTRY = "country";
 
 FirebaseMessaging fcm =
     FirebaseMessaging.instance; // Updated FirebaseMessaging initialization
-GoogleMapsPlaces places = GoogleMapsPlaces(apiKey: GOOGLE_MAPS_API_KEY);
 const user_global_location = null;
 String? location_global_address = "Ke";
-
-String country_global_key = "Kenya";
+bool showDriverSheet = false;
+String country_global_key = "KE";
 int selectedNavIndex = 0;
+
+///Price per kilometer
+double price_per_kilometer = 35;
+double price_per_kilometer_motorbike = 17;
+double base_rate = 200;
+double base_rate_motorbike = 30;
+double border_radius = 25.0;

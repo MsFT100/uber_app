@@ -7,7 +7,7 @@ import 'package:googlemaps_flutter_webservices/places.dart' as th;
 import 'package:provider/provider.dart';
 
 import '../../utils/dimensions.dart';
-import '../loading.dart';
+import '../loading_widgets/loading.dart';
 
 class DestinationSelectionWidget extends StatefulWidget {
   const DestinationSelectionWidget({Key? key}) : super(key: key);
@@ -21,7 +21,7 @@ class _DestinationSelectionWidgetState
     extends State<DestinationSelectionWidget> {
   List<th.Prediction> predictions = [];
   final DraggableScrollableController _draggableController =
-      DraggableScrollableController(); // Controller for sheet
+      DraggableScrollableController();
   bool _isSearching = false;
 
   @override
@@ -38,9 +38,7 @@ class _DestinationSelectionWidgetState
       return;
     }
 
-    print("Searching for places: $input");
-
-    setState(() => _isSearching = true); // Start loading
+    setState(() => _isSearching = true);
 
     try {
       final response =
@@ -52,17 +50,15 @@ class _DestinationSelectionWidgetState
 
       setState(() {
         predictions = response.predictions;
-        _isSearching = false; // Stop loading after getting results
+        _isSearching = false;
       });
 
-      // Expand sheet only if results are found
       if (predictions.isNotEmpty && _draggableController.isAttached) {
         _draggableController.animateTo(0.8,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut);
       }
     } catch (e) {
-      print("Error fetching predictions: $e");
       setState(() => _isSearching = false);
     }
   }
@@ -73,21 +69,17 @@ class _DestinationSelectionWidgetState
 
     return DraggableScrollableSheet(
       controller: _draggableController,
-      initialChildSize: 0.3,
-      minChildSize: 0.1,
+      initialChildSize: 0.4,
+      minChildSize: 0.35,
       maxChildSize: 1,
-      snap: false,
       builder: (context, dragScrollController) {
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey,
+                color: Colors.grey.withAlpha(100),
                 offset: const Offset(3, 2),
                 blurRadius: 7,
               ),
@@ -95,52 +87,18 @@ class _DestinationSelectionWidgetState
           ),
           child: Column(
             children: [
-              const SizedBox(height: 25),
+              const SizedBox(height: 20),
               ScrollSheetBar(),
               const SizedBox(height: Dimensions.paddingSize),
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: TextField(
-                    onChanged: searchPlaces,
-                    onTap: () {
-                      if (_draggableController.isAttached) {
-                        _draggableController.animateTo(0.95,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut);
-                      }
-                      setState(() => _isSearching = true);
-                    },
-                    textInputAction: TextInputAction.search,
-                    controller: locationProvider.destinationController,
-                    cursorColor: Colors.blue.shade900,
-                    decoration: InputDecoration(
-                      icon: const Padding(
-                        padding: EdgeInsets.only(left: 20),
-                        child: Icon(Icons.search, color: Colors.blue),
-                      ),
-                      hintText: "Where to go?",
-                      hintStyle: TextStyle(
-                        color: Colors.black,
-                        fontSize: Dimensions.fontSizeDefault,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.all(15),
-                    ),
-                  ),
-                ),
+                child: _buildSearchBox(locationProvider),
               ),
+              _buildRecentLocations(locationProvider),
               Expanded(
                 child: _isSearching
-                    ? Center(
-                        child: Loading(),
-                      ) // Show loading indicator
+                    ? Center(child: Loading())
                     : predictions.isEmpty
                         ? const Center(
                             child: Text(
@@ -159,6 +117,76 @@ class _DestinationSelectionWidgetState
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSearchBox(LocationProvider provider) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: TextField(
+        onChanged: searchPlaces,
+        onTap: () {
+          if (_draggableController.isAttached) {
+            _draggableController.animateTo(0.95,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut);
+          }
+          setState(() => _isSearching = true);
+        },
+        controller: provider.destinationController,
+        cursorColor: Colors.blue.shade900,
+        decoration: InputDecoration(
+          icon: const Padding(
+            padding: EdgeInsets.only(left: 20),
+            child: Icon(Icons.search, color: Colors.blue),
+          ),
+          hintText: "Where to go?",
+          hintStyle: TextStyle(
+            color: Colors.black,
+            fontSize: Dimensions.fontSizeDefault,
+            fontWeight: FontWeight.bold,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(15),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentLocations(LocationProvider provider) {
+    if (provider.recentDestinations.isEmpty) return SizedBox(); // Hide if empty
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Recent Locations",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            children: provider.recentDestinations.map((location) {
+              return GestureDetector(
+                onTap: () {
+                  provider.setDestination(
+                      coordinates: LatLng(location.lat, location.lng));
+                },
+                child: Chip(
+                  avatar: const Icon(Icons.history, color: Colors.blue),
+                  label: Text(location.name),
+                  backgroundColor: Colors.grey.shade200,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -184,11 +212,13 @@ class _DestinationSelectionWidgetState
           provider.setDestination(coordinates: LatLng(lat, lng));
           provider.changeWidgetShowed(showWidget: Show.PICKUP_SELECTION);
 
-          // Clear predictions after selection
-          setState(() {
-            predictions = [];
-            _isSearching = false;
-          });
+          if (mounted) {
+            // Ensure widget is still mounted before calling setState()
+            setState(() {
+              predictions = [];
+              _isSearching = false;
+            });
+          }
         },
       );
     }).toList();

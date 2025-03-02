@@ -16,15 +16,28 @@ class RouteModel {
 
 class Distance {
   final String text;
-  final int value;
+  final int value; // Distance in meters
 
   Distance({required this.text, required this.value});
 
   Distance.fromMap(Map data)
-      : text = data["text"] ?? '', // Default to empty string if null
-        value = data["value"] ?? 0; // Default to 0 if null
+      : text = data["text"] ?? '',
+        value = data["value"] ?? 0;
 
-  Map<String, dynamic> toJson() => {"text": text, "value": value};
+  // ✅ Automatically calculate and round ride price
+  double get ridePrice {
+    const double pricePerKm = 35;
+    double price =
+        (value / 1000.0) * pricePerKm; // Convert meters to km and multiply
+    return double.parse(
+        price.toStringAsFixed(2)); // ✅ Round to 2 decimal places
+  }
+
+  Map<String, dynamic> toJson() => {
+        "text": text,
+        "value": ridePrice,
+        //"ridePrice": ridePrice, // ✅ Include price in JSON
+      };
 }
 
 class TimeNeeded {

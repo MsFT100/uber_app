@@ -60,14 +60,12 @@ class _PickupSelectionWidgetState extends State<PickupSelectionWidget> {
   @override
   Widget build(BuildContext context) {
     final locationProvider = Provider.of<LocationProvider>(context);
-    final position = locationProvider.currentPosition;
+
     return DraggableScrollableSheet(
       controller: _draggableController,
-      initialChildSize: 0.2,
-      minChildSize: 0.1,
+      initialChildSize: 0.35,
+      minChildSize: 0.3,
       maxChildSize: 1,
-      snapSizes: [0.4, 1],
-      snap: false,
       builder: (BuildContext context, ScrollController myScrollController) {
         return Container(
           decoration: BoxDecoration(

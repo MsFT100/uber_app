@@ -25,7 +25,7 @@ class HomeSearchWidget extends StatelessWidget {
             color: Theme.of(context).textTheme.bodyMedium!.color!,
           ),
           onTap: () {
-            changeScreen(context, MyHomePage(title: "title"));
+            changeScreen(context, HomePage());
           },
           cursorColor: Theme.of(context).hintColor,
           autofocus: true,
@@ -67,7 +67,7 @@ class HomeSearchWidget extends StatelessWidget {
               color: Theme.of(context).hintColor,
               onPressed: () {
                 print('Voice search clicked!');
-                changeScreen(context, MyHomePage(title: ''));
+                changeScreen(context, HomePage());
               },
               icon: Image.asset(
                 Images.microPhoneIcon,
@@ -80,7 +80,7 @@ class HomeSearchWidget extends StatelessWidget {
               color: Theme.of(context).hintColor,
               onPressed: () {
                 print('Prefix icon clicked!');
-                changeScreen(context, MyHomePage(title: "title"));
+                changeScreen(context, HomePage());
               },
               icon: Image.asset(
                 Images.homeSearchIcon,

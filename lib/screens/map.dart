@@ -1,4 +1,7 @@
+import 'package:BucoRide/helpers/screen_navigation.dart';
 import 'package:BucoRide/providers/location_provider.dart';
+import 'package:BucoRide/screens/menu.dart';
+import 'package:BucoRide/screens/parcels/parcel_page.dart';
 import 'package:BucoRide/utils/app_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
@@ -6,12 +9,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:googlemaps_flutter_webservices/places.dart' as th;
 import 'package:provider/provider.dart';
 
-import '../helpers/screen_navigation.dart';
-import '../widgets/loading_location.dart';
-import 'menu.dart';
+import '../widgets/loading_widgets/loading_location.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({Key? key}) : super(key: key);
+  const MapScreen({super.key});
 
   @override
   _MapScreenState createState() => _MapScreenState();
@@ -56,7 +57,7 @@ class _MapScreenState extends State<MapScreen> {
                     },
                     initialCameraPosition: CameraPosition(
                         target: LatLng(position.latitude, position.longitude),
-                        zoom: 20.0),
+                        zoom: 17.0),
                     trafficEnabled: showTraffic,
                     mapType: MapType.normal,
                     compassEnabled: true, // Enables the compass for orientation
@@ -72,29 +73,77 @@ class _MapScreenState extends State<MapScreen> {
                     polylines: _polyline,
                   ),
 
+                  ///HOME POSITION BUTTON
                   Positioned(
-                    top: 36.0,
-                    left: 26.0,
-                    child: FloatingActionButton(
-                      backgroundColor: Colors.white,
-                      onPressed: () {
-                        // Handle button press
-                        changeScreen(
-                            context,
-                            Menu(
-                              title: '',
-                            ));
-                      },
-                      child: const Icon(Icons.menu),
+                    top: 45.0,
+                    left: 23.0,
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      padding: EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppConstants
+                            .lightPrimary, // Different color for distinction
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.shade600,
+                            spreadRadius: 2,
+                            blurRadius: 6,
+                            offset: Offset(0, 3), // Changes position of shadow
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.home,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          changeScreen(context, Menu());
+                        },
+                      ),
                     ),
                   ),
 
+                  /// PARCEL POSITION BUTTON
+                  Positioned(
+                    top: 110.0,
+                    left: 23.0,
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      padding: EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppConstants
+                            .lightPrimary, // Different color for distinction
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.shade600,
+                            spreadRadius: 2,
+                            blurRadius: 6,
+                            offset: Offset(0, 3), // Changes position of shadow
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.delivery_dining,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          changeScreen(context, ParcelPage());
+                        },
+                      ),
+                    ),
+                  ),
                   // Floating button positioned at the bottom right
 
                   // New FAB for Centering Location
                   Positioned(
-                    top: 730, // Positioned below the first button
-                    right: 15,
+                    top: 170.0,
+                    left: 23.0,
                     child: Container(
                       width: 50,
                       height: 50,
@@ -104,7 +153,7 @@ class _MapScreenState extends State<MapScreen> {
                         borderRadius: BorderRadius.circular(25),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey,
+                            color: Colors.grey.shade600,
                             spreadRadius: 2,
                             blurRadius: 6,
                             offset: Offset(0, 3), // Changes position of shadow
@@ -119,7 +168,7 @@ class _MapScreenState extends State<MapScreen> {
                         onPressed: () {
                           // Center the map on the user's current location
                           LatLng newPos =
-                              LatLng(position!.latitude, position.longitude);
+                              LatLng(position.latitude, position.longitude);
                           _mapController
                               ?.animateCamera(CameraUpdate.newLatLng(newPos));
                         },

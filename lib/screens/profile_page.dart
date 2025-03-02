@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/user.dart';
+import '../utils/dimensions.dart';
 import '../utils/images.dart';
 import 'profile/edit_page.dart';
 
@@ -52,8 +53,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Stack(
       alignment: Alignment.center,
       children: [
+        const SizedBox(height: Dimensions.paddingSizeExtraLarge),
+        const SizedBox(height: Dimensions.paddingSizeExtraLarge),
         Container(
-          height: 180,
+          height: 200,
           decoration: BoxDecoration(
             color: AppConstants.lightPrimary,
             borderRadius: const BorderRadius.only(
@@ -95,17 +98,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildStatsSection() {
     UserProvider userProvider = Provider.of<UserProvider>(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSize),
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSize),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildStatItem("Trips", "${userProvider.userModel!.trips}"),
-              _buildStatItem("Distance", "250 km"),
               _buildStatItem("Rating", "${userProvider.userModel!.rating} ⭐"),
             ],
           ),

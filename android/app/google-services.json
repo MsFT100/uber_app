@@ -13,7 +13,20 @@
           "package_name": "com.buricode.msft"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "95457171066-83mnbu5multigc7d3d9t43i4pp5uttjf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.buricode.msft",
+            "certificate_hash": "a4288239128df56a341f9ae77aa5f599f5a80326"
+          }
+        },
+        {
+          "client_id": "95457171066-9sg8a908ucta3q091b4sugs58vp74hk0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAGDlcfxXtt2rmk_GrytWTVRGMHngzdHYM"
@@ -24,7 +37,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "95457171066-9sg8a908ucta3q091b4sugs58vp74hk0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "95457171066-629v1gdri25eqsms3e7n9ac8m3s9pv3l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.buricodedriver.msft"
+              }
+            }
+          ]
         }
       }
     },
@@ -35,7 +60,20 @@
           "package_name": "com.buricodedriver.msft"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "95457171066-02res33sv4g6hb6fv7g1vq5aiqto2o4h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.buricodedriver.msft",
+            "certificate_hash": "a4288239128df56a341f9ae77aa5f599f5a80326"
+          }
+        },
+        {
+          "client_id": "95457171066-9sg8a908ucta3q091b4sugs58vp74hk0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAGDlcfxXtt2rmk_GrytWTVRGMHngzdHYM"
@@ -46,7 +84,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "95457171066-9sg8a908ucta3q091b4sugs58vp74hk0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "95457171066-629v1gdri25eqsms3e7n9ac8m3s9pv3l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.buricodedriver.msft"
+              }
+            }
+          ]
         }
       }
     }

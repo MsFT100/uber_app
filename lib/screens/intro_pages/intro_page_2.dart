@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../utils/app_constants.dart';
-import '../../utils/images.dart';
 
 class IntroPage2 extends StatelessWidget {
   const IntroPage2({super.key});
@@ -12,48 +12,60 @@ class IntroPage2 extends StatelessWidget {
       backgroundColor: AppConstants.lightPrimary,
       body: Stack(
         children: [
-          // Background image
-
-          // Gradient overlay
+          // Gradient Overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.black, Colors.transparent],
+                colors: [Colors.black.withAlpha(100), Colors.transparent],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image:
-                    AssetImage(Images.onBoardTwo), // Add your image path here
+
+          // Content
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Lottie animation (Replace with a real animation file)
+              Lottie.asset(
+                'assets/animations/mapAnimations.json',
+                height: 250,
                 fit: BoxFit.cover,
               ),
-            ),
-          ),
-          Container(
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                SizedBox(height: 90),
-                Container(
-                  alignment: Alignment(0, 0),
-                  child: Text(
-                    "Make Trips and Earn Money with Your Vehicle",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                        fontFamily: AppConstants.fontFamily),
+
+              SizedBox(height: 20),
+
+              // Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  "Send Parcels Anywhere with your phone",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontFamily: AppConstants.fontFamily,
                   ),
                 ),
-                SizedBox(height: 50),
-              ],
-            ),
+              ),
+
+              SizedBox(height: 15),
+
+              // Subtitle
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: Text(
+                  "Sending goods has never been this easy",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

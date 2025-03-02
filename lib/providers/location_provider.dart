@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:BucoRide/models/route.dart';
 import 'package:BucoRide/services/map_requests.dart';
+import 'package:BucoRide/utils/app_constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
@@ -13,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/constants.dart';
 import '../models/driver.dart';
+import '../models/recent-locations.dart';
 import '../services/drivers.dart';
 import '../utils/images.dart';
 
@@ -22,33 +24,40 @@ enum Show {
   PAYMENT_METHOD_SELECTION,
   DRIVER_FOUND,
   TRIP,
+  TRIP_COMPLETE,
   SEARCHING_DRIVER
 }
 
 class LocationProvider with ChangeNotifier {
   static const PICKUP_MARKER_ID = 'pickup';
   static const LOCATION_MARKER_ID = 'location';
+  static const DESTINATION_MARKER_ID = 'destination';
+  static const ADDRESS_MARKER_ID = 'address';
   //  draggable to show
-  Show show = Show.DESTINATION_SELECTION;
+  Show _show = Show.DESTINATION_SELECTION;
+
+  Show get show => _show;
 
   GoogleMapController? _mapController;
 
   // LIST OBJECTS
   Set<Marker> _markers = {};
+  Set<Marker> _addressMarkers = {};
   Set<Polyline> _polylines = {};
 
   Position? _currentPosition;
   Stream<Position>? _positionStream;
-  Stream<List<DriverModel>>? _allDriversStream;
   DriverService? _driverService;
+  Stream<List<DriverPosition>>? _driverPositionsStream;
   String? locationAddress;
   RouteModel? routeModel;
   Timer? _debounce; // Declare at the class level
+  List<RecentLocation> recentDestinations = [];
 
   String _riderAddress = 'Loading...';
 
   static LatLng _center = LatLng(0, 0);
-  late LatLng _bounds;
+
   //   taxi pin
   late BitmapDescriptor carPin =
       BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
@@ -68,10 +77,6 @@ class LocationProvider with ChangeNotifier {
   LatLng get center => _center;
   LatLng get lastPosition => _lastPosition;
 
-//LatLng get bounds => _bounds;
-
-//SETTERS
-
   // BOOLEANS
 
   bool _isTrafficEnabled = false;
@@ -81,9 +86,20 @@ class LocationProvider with ChangeNotifier {
   TextEditingController pickupLocationController = TextEditingController();
   TextEditingController destinationController = TextEditingController();
   BitmapDescriptor markerIcon = BitmapDescriptor.defaultMarker;
+  BitmapDescriptor startIcon = BitmapDescriptor.defaultMarker;
+  BitmapDescriptor endIcon = BitmapDescriptor.defaultMarker;
+  BitmapDescriptor carIcon = BitmapDescriptor.defaultMarker;
+  BitmapDescriptor addressIcon = BitmapDescriptor.defaultMarker;
 
   LocationProvider() {
+    _addCustomDriverMarker();
+    _listenToDrivers();
     _startPositionStream();
+    addTripMarkers();
+  }
+  set show(Show value) {
+    _show = value;
+    notifyListeners(); // Ensure UI rebuilds when show changes
   }
 
   Future<void> fetchLocation() async {
@@ -106,6 +122,7 @@ class LocationProvider with ChangeNotifier {
       }
 
       _currentPosition = await Geolocator.getCurrentPosition();
+      _center = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       LatLng pos =
           LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       _addCustomMarker(pos);
@@ -135,7 +152,7 @@ class LocationProvider with ChangeNotifier {
   void _startPositionStream() {
     final locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high, // High accuracy for ride-hailing apps
-      distanceFilter: 10, // Update only if moved by 10 meters
+      distanceFilter: 5, // Update only if moved by 10 meters
     );
 
     _positionStream =
@@ -148,52 +165,15 @@ class LocationProvider with ChangeNotifier {
       // Update the center position
       _center = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
 
+      if (show == Show.TRIP) {
+        addRiderRoutePolyline(_center, destinationCoordinates);
+      }
       _addCustomMarker(pos);
       _addCurrentLocationMarker(position);
       listenToDrivers();
       notifyListeners();
     });
   }
-
-//   Future sendRequest(
-//       {required LatLng origin, required LatLng destination}) async {
-//     LatLng _org;
-//     LatLng _dest;
-
-//     if (origin == null && destination == null) {
-//       _org = pickupCoordinates;
-//       _dest = destinationCoordinates;
-//     } else {
-//       _org = origin;
-//       _dest = destination;
-//     }
-
-//     RouteModel route =
-//         await _googleMapsServices.getRouteByCoordinates(_org, _dest);
-//     routeModel = route;
-
-//     if (origin == null) {
-//       ridePrice =
-//           double.parse((routeModel!.distance.value / 500).toStringAsFixed(2));
-//     }
-//     List<Marker> mks = _markers
-//         .where((element) => element.markerId.value == "location")
-//         .toList();
-//     if (mks.length >= 1) {
-//       _markers.remove(mks[0]);
-//     }
-// // ! another method will be created just to draw the polys and add markers
-//     _addCurrentLocationMarker(position)
-//     _addLocationMarker(destinationCoordinates, routeModel!.distance.text);
-//     _center = destinationCoordinates;
-//     _createRoute(route.points, color: Colors.deepOrange);
-//     _createRoute(
-//       route.points,
-//       color: Colors.black54,
-//     );
-
-//     notifyListeners();
-//   }
 
 //  _clearDriverMarkers() {
 //     _markers.forEach((element) {
@@ -241,6 +221,22 @@ class LocationProvider with ChangeNotifier {
     }
   }
 
+  void addAddressMarker(LatLng position) {
+    final marker = Marker(
+      markerId: MarkerId(ADDRESS_MARKER_ID),
+      position: LatLng(position.latitude, position.longitude),
+      infoWindow: InfoWindow(title: 'Selected Location'),
+      icon: addressIcon,
+    );
+
+    _markers
+      ..removeWhere(
+          (m) => m.markerId.value == ADDRESS_MARKER_ID) // Remove old marker
+      ..add(marker); // Add new marker
+
+    notifyListeners();
+  }
+
   onCreate(GoogleMapController controller) {
     _mapController = controller;
     notifyListeners();
@@ -266,6 +262,24 @@ class LocationProvider with ChangeNotifier {
         icon: markerIcon));
   }
 
+  _addCustomDriverMarker() {
+    BitmapDescriptor.asset(
+            ImageConfiguration(size: Size(30, 30), devicePixelRatio: 2.5),
+            Images.carTop)
+        .then((icon) {
+      carIcon = icon;
+    });
+  }
+
+  _addCustomAddressMarker() {
+    BitmapDescriptor.asset(
+            ImageConfiguration(size: Size(30, 30), devicePixelRatio: 2.5),
+            Images.addLocation)
+        .then((icon) {
+      carIcon = icon;
+    });
+  }
+
   clearMarkers() {
     _markers.clear();
     notifyListeners();
@@ -288,6 +302,21 @@ class LocationProvider with ChangeNotifier {
 
   setDestination({required LatLng coordinates}) {
     destinationCoordinates = coordinates;
+
+    // Save the last two locations
+    final newLocation = RecentLocation(
+      name: destinationController.text,
+      lat: coordinates.latitude,
+      lng: coordinates.longitude,
+    );
+
+    if (!recentDestinations.any((loc) => loc.name == newLocation.name)) {
+      if (recentDestinations.length >= 2) {
+        recentDestinations.removeAt(0); // Keep only the last two
+      }
+      recentDestinations.add(newLocation);
+    }
+
     notifyListeners();
   }
 
@@ -300,9 +329,7 @@ class LocationProvider with ChangeNotifier {
   }
 
   void _adjustCameraToFitRoute() {
-    if (mapController != null &&
-        pickupCoordinates != null &&
-        destinationCoordinates != null) {
+    if (mapController != null) {
       LatLngBounds bounds =
           _calculateBounds(pickupCoordinates, destinationCoordinates);
       mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
@@ -322,10 +349,8 @@ class LocationProvider with ChangeNotifier {
 
   changePickupLocationAddress({required String address}) {
     pickupLocationController.text = address;
-    if (pickupCoordinates != null) {
-      //LatLng(position.latitude, position.longitude);
-      _center = pickupCoordinates;
-    }
+    //LatLng(position.latitude, position.longitude);
+    _center = pickupCoordinates;
     notifyListeners();
   }
 
@@ -365,6 +390,31 @@ class LocationProvider with ChangeNotifier {
       ..add(marker); // Add new marker
 
     notifyListeners();
+  }
+
+  void addTripHistoryMarkers(LatLng start, LatLng end) {
+    final startMarker = Marker(
+      markerId: MarkerId('riderMarker'),
+      position: start,
+      infoWindow: InfoWindow(title: "Pickup"),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+    );
+    final endMarker = Marker(
+      markerId: MarkerId('riderMarker'),
+      position: end,
+      infoWindow: InfoWindow(title: "Destination"),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+    );
+
+    _markers
+      ..removeWhere(
+          (m) => m.markerId.value == PICKUP_MARKER_ID) // Remove old marker
+      ..add(startMarker);
+    _markers
+      ..removeWhere(
+          (m) => m.markerId.value == DESTINATION_MARKER_ID) // Remove old marker
+      ..add(endMarker);
+    print("added Markers");
   }
 
   void addRiderLocationMarker(LatLng riderPosition) {
@@ -447,6 +497,7 @@ class LocationProvider with ChangeNotifier {
   Future<void> createJourneyPolyline(
       LatLng driverPosition, LatLng destination) async {
     String? encodedPolyline = await getDirections(driverPosition, destination);
+
     if (encodedPolyline != null) {
       List<LatLng> polylineCoordinates = decodePolyline(encodedPolyline);
       final polyline = Polyline(
@@ -461,17 +512,54 @@ class LocationProvider with ChangeNotifier {
     }
   }
 
+  void AddDestinationMarker(LatLng start, LatLng end) {
+    clearMarkers();
+    addTripMarkers();
+
+    _markers.add(Marker(
+        markerId: MarkerId(LOCATION_MARKER_ID),
+        position: start,
+        icon: startIcon,
+        anchor: const Offset(0.5, 1.0)));
+    _markers.add(Marker(
+        markerId: MarkerId(DESTINATION_MARKER_ID),
+        position: end,
+        icon: endIcon,
+        anchor: const Offset(0.5, 1.0)));
+    print("Added Destination Marker");
+  }
+
+  void addTripMarkers() {
+    BitmapDescriptor.asset(
+            ImageConfiguration(size: Size(30, 30), devicePixelRatio: 2.5),
+            Images.location)
+        .then((icon) {
+      startIcon = icon;
+    });
+
+    BitmapDescriptor.asset(
+            ImageConfiguration(
+              size: Size(80, 80),
+              devicePixelRatio: 2.5,
+            ),
+            Images.mapLocationIcon)
+        .then((icon) {
+      endIcon = icon;
+    });
+  }
+
 // Add polyline for the rider's journey (from rider's position to destination)
   Future<void> addRiderRoutePolyline(LatLng start, LatLng end) async {
     try {
       String? encodedPolyline = await getDirections(start, end);
+      AddDestinationMarker(start, end);
       if (encodedPolyline != null) {
         List<LatLng> polylineCoordinates = decodePolyline(encodedPolyline);
 
         final polyline = Polyline(
           polylineId: PolylineId('rider_route'),
           points: polylineCoordinates,
-          color: Colors.green, // Customize color as needed
+          color: AppConstants.lightPrimary, // Customize color as needed
           width: 5,
         );
 
@@ -498,6 +586,7 @@ class LocationProvider with ChangeNotifier {
       RouteModel route =
           await GoogleMapsServices().getRouteByCoordinates(start, end);
       routeModel = route; // ✅ Store the fetched route
+
       notifyListeners();
     } catch (e) {
       print("Error fetching route: $e");
@@ -571,9 +660,11 @@ class LocationProvider with ChangeNotifier {
     destinationCoordinates =
         LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
     _polylines.clear();
+    markers.clear();
     routeModel = null;
     destinationController.clear();
     show = Show.DESTINATION_SELECTION;
+    _addCurrentLocationMarker(_currentPosition!);
     animateCamera();
     notifyListeners();
   }
@@ -593,10 +684,35 @@ class LocationProvider with ChangeNotifier {
     );
   }
 
-  // DRIVER FECTHING ALL
-  //void _listenToDrivers() {
-  //_allDriversStream = _driverService?.getDrivers().listen(onData);
-  //}
+  // Stream for driver positions
+
+  void _listenToDrivers() {
+    if (_driverService == null) {
+      print("DriverService is null, skipping driver listening.");
+      return;
+    }
+    _driverPositionsStream = _driverService!.getDriverPositions();
+
+    _driverPositionsStream!.listen((driverPositions) {
+      Set<Marker> newMarkers = {}; // Temporary markers set
+
+      for (var position in driverPositions) {
+        newMarkers.add(
+          Marker(
+            markerId: MarkerId("${position.lat}-${position.lng}"),
+            position: LatLng(position.lat, position.lng),
+            rotation: position.heading,
+            icon: carIcon,
+          ),
+        );
+      }
+
+      // Update the markers list
+      _markers = newMarkers;
+      notifyListeners(); // Notify UI to refresh if using Provider
+    });
+  }
+
   void listenToDrivers() {
     //Get online drivers
     // FirebaseFirestore.instance
@@ -624,7 +740,7 @@ class LocationProvider with ChangeNotifier {
       if (driver.position.lat != null && driver.position.lng != null) {
         Marker marker = Marker(
           markerId: MarkerId(driver.id),
-          position: LatLng(driver.position.lat!, driver.position.lng!),
+          position: LatLng(driver.position.lat, driver.position.lng!),
           icon:
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
           infoWindow: InfoWindow(
@@ -700,7 +816,7 @@ class LocationProvider with ChangeNotifier {
   }
 
   _stopListeningToDriversStream() {
-//    _clearDriverMarkers();
+    //_clearDriverMarkers();
     //allDriversStream.cancel();
   }
 //   _listenToDriver() {

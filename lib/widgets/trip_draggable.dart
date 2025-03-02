@@ -1,201 +1,197 @@
+import 'package:BucoRide/utils/app_constants.dart';
+import 'package:BucoRide/widgets/trip_widgets/payment_rating_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
-import '../helpers/style.dart';
 import '../locators/service_locator.dart';
 import '../providers/app_state.dart';
+import '../providers/location_provider.dart';
 import '../services/call_sms.dart';
+import '../utils/dimensions.dart';
 import 'custom_text.dart';
 
-class TripWidget extends StatelessWidget {
+class TripWidget extends StatefulWidget {
+  @override
+  _TripWidgetState createState() => _TripWidgetState();
+}
+
+class _TripWidgetState extends State<TripWidget> {
   final CallsAndMessagesService _service = locator<CallsAndMessagesService>();
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+    final locationProvider =
+        Provider.of<LocationProvider>(context, listen: false);
+
+    if (appState.tripComplete) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          // Ensure the widget is still in the tree
+          setState(() {
+            locationProvider.show = Show.TRIP_COMPLETE;
+          });
+          _showPaymentAndRatingDialog();
+        }
+      });
+    }
+  }
+
+  _showPaymentAndRatingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User must complete action
+      builder: (BuildContext context) {
+        return PaymentRatingDialog();
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    AppStateProvider appState = Provider.of<AppStateProvider>(context);
+    AppStateProvider appState =
+        Provider.of<AppStateProvider>(context, listen: true);
+    final locationProvider = Provider.of<LocationProvider>(context);
 
     return DraggableScrollableSheet(
-        initialChildSize: 0.2,
-        minChildSize: 0.05,
-        maxChildSize: 0.8,
-        builder: (BuildContext context, myscrollController) {
-          return Container(
-            decoration: BoxDecoration(
-                color: white,
-//                        borderRadius: BorderRadius.only(
-//                            topLeft: Radius.circular(20),
-//                            topRight: Radius.circular(20)),
-                boxShadow: [
-                  BoxShadow(
-                      color: Color.fromARGB(218, 158, 158, 158),
-                      offset: Offset(3, 2),
-                      blurRadius: 7)
-                ]),
-            child: ListView(
-              controller: myscrollController,
-              children: [
-                SizedBox(
-                  height: 12,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+      initialChildSize: 0.25,
+      minChildSize: 0.1,
+      maxChildSize: 0.4,
+      builder: (BuildContext context, myscrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.grey.shade400,
+                  offset: Offset(0, -3),
+                  blurRadius: 8),
+            ],
+          ),
+          child: ListView(
+            controller: myscrollController,
+            padding: EdgeInsets.all(16),
+            children: [
+              Center(
+                child: CustomText(
+                  text: 'ON TRIP',
+                  weight: FontWeight.bold,
+                  color: Colors.green,
+                )
+                    .animate()
+                    .fadeIn(duration: 500.ms)
+                    .slide(begin: Offset(0, -0.3), end: Offset(0, 0)),
+              ),
+              Divider(),
+              ListTile(
+                leading: CircleAvatar(
+                  radius: 30,
+                  backgroundImage: appState.driverModel?.photo != null
+                      ? NetworkImage(appState.driverModel!.photo)
+                      : null,
+                  child: appState.driverModel?.photo == null
+                      ? Icon(Icons.person_outline, size: 30)
+                      : null,
+                ).animate().fadeIn(duration: 600.ms),
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Container(
-                        child: CustomText(
-                      text: 'ON TRIP',
-                      weight: FontWeight.bold,
-                      color: green,
-                    )),
+                    Text(
+                      appState.driverModel?.name ?? "Loading...",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      appState.driverModel?.model ?? "",
+                      style: TextStyle(
+                          fontSize: Dimensions.fontSizeSmall,
+                          color: AppConstants.lightPrimary),
+                    ),
+                    Text(
+                      appState.driverModel?.licensePlate ?? "",
+                      style: TextStyle(
+                          fontSize: Dimensions.fontSizeDefault,
+                          color: Colors.black),
+                    ),
                   ],
                 ),
-                Divider(),
-                ListTile(
-                  leading: Container(
-                    child: appState.driverModel.phone == null
-                        ? CircleAvatar(
-                            radius: 30,
-                            child: Icon(
-                              Icons.person_outline,
-                              size: 25,
-                            ),
-                          )
-                        : CircleAvatar(
-                            radius: 30,
-                            backgroundImage:
-                                NetworkImage(appState.driverModel.photo),
-                          ),
-                  ),
-                  title: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                trailing: IconButton(
+                  icon: Icon(Icons.info, color: Colors.red, size: 28),
+                  onPressed: () {},
+                ),
+              ),
+              Divider(),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: CustomText(
+                    text: "Ride details", size: 16, weight: FontWeight.bold),
+              ),
+              Row(
+                children: [
+                  Column(
                     children: [
-                      RichText(
-                          text: TextSpan(children: [
-                        TextSpan(
-                            text: appState.driverModel.name + "\n",
-                            style: TextStyle(
-                                fontSize: 17, fontWeight: FontWeight.bold)),
-                        TextSpan(
-                            text: appState.driverModel.car,
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w300)),
-                      ], style: TextStyle(color: black))),
+                      Icon(Icons.location_on, color: Colors.redAccent),
+                      Container(height: 40, width: 2, color: Colors.blue),
+                      Icon(Icons.flag, color: Colors.black),
                     ],
+                  ).animate().fadeIn(duration: 700.ms),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Pickup Location",
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(locationProvider.locationAddress ?? 'Loading...'),
+                        SizedBox(height: 8),
+                        Text("Destination",
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                            appState.rideRequestModel?.destination['address'] ??
+                                'Loading...'),
+                      ],
+                    ),
                   ),
-//                  subtitle: RaisedButton(
-//                      color: Colors.white.withOpacity(.9),
-//                      onPressed: (){},
-//                      child: CustomText(
-//                        text: "End Trip",
-//                        color: red,
-//                      )),
-                  trailing: Container(
-                      decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(30)),
-                      child: IconButton(
-                        onPressed: () {},
-                        icon: Icon(
-                          Icons.info,
-                          color: white,
-                        ),
-                      )),
+                ],
+              ),
+              Divider(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CustomText(
+                      text: "Ride price", size: 16, weight: FontWeight.bold),
+                  Text(
+                    "\ ksh \ ${appState.ridePrice.toStringAsFixed(0)}",
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black),
+                  ).animate().fadeIn(duration: 800.ms),
+                ],
+              ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
-                Divider(),
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: CustomText(
-                    text: "Ride details",
-                    size: 18,
-                    weight: FontWeight.bold,
-                  ),
-                ),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 10,
-                    ),
-                    Container(
-                      height: 100,
-                      width: 10,
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.location_on,
-                            color: grey,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 9),
-                            child: Container(
-                              height: 45,
-                              width: 2,
-                              color: primary,
-                            ),
-                          ),
-                          Icon(Icons.flag),
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      width: 30,
-                    ),
-                    RichText(
-                        text: TextSpan(children: [
-                      TextSpan(
-                          text: "\nPick up location \n",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
-                      TextSpan(
-                          text: "25th avenue, flutter street \n\n\n",
-                          style: TextStyle(
-                              fontWeight: FontWeight.w300, fontSize: 16)),
-                      TextSpan(
-                          text: "Destination \n",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
-                      TextSpan(
-                          text: "25th avenue, flutter street \n",
-                          style: TextStyle(
-                              fontWeight: FontWeight.w300, fontSize: 16)),
-                    ], style: TextStyle(color: black))),
-                  ],
-                ),
-                Divider(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: CustomText(
-                        text: "Ride price",
-                        size: 18,
-                        weight: FontWeight.bold,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: CustomText(
-                        text: "\$${appState.ridePrice}",
-                        size: 18,
-                        weight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: red, // Use your 'red' color here
-                      ),
-                      child: CustomText(
-                        text: "END MY TRIP",
-                        color: white,
-                      ),
-                    )),
-              ],
-            ),
-          );
-        });
+                onPressed: () {
+                  locationProvider.cancelRequest();
+                  appState.cancelRequest();
+                  appState.cancelRequestListener();
+                },
+                child: CustomText(text: "END MY TRIP", color: Colors.white),
+              ).animate().fadeIn(duration: 900.ms).scale(begin: 0.9, end: 1.0),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
