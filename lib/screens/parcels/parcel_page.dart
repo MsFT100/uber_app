@@ -206,11 +206,11 @@ class _ParcelPageState extends State<ParcelPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: TextField(
-
         controller: controller,
         keyboardType: inputType,
         inputFormatters: inputFormatters,
-        style: TextStyle(fontSize: Dimensions.fontSizeSmall, color: Colors.black),
+        style:
+            TextStyle(fontSize: Dimensions.fontSizeSmall, color: Colors.black),
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: Colors.grey.shade700),
           labelText: label,
@@ -219,7 +219,6 @@ class _ParcelPageState extends State<ParcelPage> {
           ),
           filled: true,
           fillColor: Colors.white12,
-
         ),
       ),
     );
@@ -284,7 +283,9 @@ class _ParcelPageState extends State<ParcelPage> {
                       ),
                       suffixIcon: Icon(Icons.search),
                     ),
-                    style: TextStyle(fontSize: Dimensions.fontSizeSmall, color: Colors.black),
+                    style: TextStyle(
+                        fontSize: Dimensions.fontSizeSmall,
+                        color: Colors.black),
                   ),
                   SizedBox(height: Dimensions.paddingSizeExtraSmall),
                   if (predictions.isNotEmpty)
@@ -328,7 +329,7 @@ class _ParcelPageState extends State<ParcelPage> {
                       child: GoogleMap(
                         initialCameraPosition: CameraPosition(
                             target:
-                                LatLng(position!.latitude, position!.longitude),
+                                LatLng(position!.latitude, position.longitude),
                             zoom: 17.0),
                         onMapCreated: (GoogleMapController controller) {
                           locationProvider.onCreate(controller);

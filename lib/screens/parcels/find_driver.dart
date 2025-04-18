@@ -534,7 +534,7 @@ class _FindParcelDriverScreenState extends State<FindParcelDriverScreen>
                     children: [
                       Text("Pickup Location",
                           style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text(locationProvider.riderAddress ?? 'Loading...'),
+                      Text(locationProvider.riderAddress),
                       SizedBox(height: 8),
                       Text("Destination",
                           style: TextStyle(fontWeight: FontWeight.bold)),

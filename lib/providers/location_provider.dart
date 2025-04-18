@@ -42,7 +42,7 @@ class LocationProvider with ChangeNotifier {
 
   // LIST OBJECTS
   Set<Marker> _markers = {};
-  Set<Marker> _addressMarkers = {};
+
   Set<Polyline> _polylines = {};
 
   Position? _currentPosition;
@@ -266,15 +266,6 @@ class LocationProvider with ChangeNotifier {
     BitmapDescriptor.asset(
             ImageConfiguration(size: Size(30, 30), devicePixelRatio: 2.5),
             Images.carTop)
-        .then((icon) {
-      carIcon = icon;
-    });
-  }
-
-  _addCustomAddressMarker() {
-    BitmapDescriptor.asset(
-            ImageConfiguration(size: Size(30, 30), devicePixelRatio: 2.5),
-            Images.addLocation)
         .then((icon) {
       carIcon = icon;
     });

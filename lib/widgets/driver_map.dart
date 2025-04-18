@@ -1,5 +1,4 @@
 import 'package:BucoRide/providers/location_provider.dart';
-import 'package:BucoRide/utils/app_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';

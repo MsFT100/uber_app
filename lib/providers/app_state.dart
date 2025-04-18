@@ -73,7 +73,7 @@ class AppStateProvider with ChangeNotifier {
   late StreamSubscription<QuerySnapshot> driverStream;
   late StreamSubscription<DocumentSnapshot>? _subscription;
   late StreamSubscription<DocumentSnapshot>? _parcelSubscription;
-  //late StreamSubscription<Q>
+
   DriverModel? driverModel;
 
   double ridePrice = 0;

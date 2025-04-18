@@ -60,17 +60,17 @@ class _PaymentMethodSelectionWidgetState
 
     // Correct price calculation (Base rate + Distance * Rate)
     appState.ridePrice = baseRate + (distanceInKm * rideMultiplier);
-    appState.rideRequestModel?.distance['value'] = appState.ridePrice;
+
     appState.vehicleType = selectedVehicleLabel;
     print("Updated Ride Price: ${appState.ridePrice}");
   }
 
   // List of vehicle options
   final List<Map<String, dynamic>> vehicles = [
-    {"icon": Images.motorBikeIcon, "label": "Go Moto"},
-    {"icon": Images.sedanIcon, "label": "Car"},
+    {"icon": Images.motorBikeIcon, "label": "Motorbike"},
+    {"icon": Images.sedanIcon, "label": "Sedan"},
     {"icon": Images.vanIcon, "label": "Van"},
-    {"icon": Images.tuk_tukIcon, "label": "TukTuk"},
+    {"icon": Images.tuk_tukIcon, "label": "Tuk-Tuk"},
   ];
 
   @override
@@ -110,61 +110,65 @@ class _PaymentMethodSelectionWidgetState
 
                 ///Types of transport
                 Container(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: List.generate(vehicles.length, (index) {
-                      return GestureDetector(
-                          onTap: () => selectVehicle(index),
-                          child: AnimatedContainer(
-                            duration: Duration(milliseconds: 300),
-                            width: 90,
-                            height: 120,
-                            padding:
-                                EdgeInsets.all(Dimensions.paddingSizeSmall),
-                            decoration: BoxDecoration(
-                              color: selectedIndex == index
-                                  ? Colors.yellow.shade600 // Highlighted color
-                                  : Colors.grey.shade300, // Default color
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: List.generate(vehicles.length, (index) {
+                        return GestureDetector(
+                            onTap: () => selectVehicle(index),
+                            child: AnimatedContainer(
+                              duration: Duration(milliseconds: 300),
+                              width: 90,
+                              height: 120,
+                              padding:
+                                  EdgeInsets.all(Dimensions.paddingSizeSmall),
+                              decoration: BoxDecoration(
                                 color: selectedIndex == index
-                                    ? Colors.yellow
-                                    : Colors.transparent,
-                                width: 3,
+                                    ? Colors
+                                        .yellow.shade600 // Highlighted color
+                                    : Colors.grey.shade300, // Default color
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: selectedIndex == index
+                                      ? Colors.yellow
+                                      : Colors.transparent,
+                                  width: 3,
+                                ),
+                                boxShadow: selectedIndex == index
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.yellow.shade300,
+                                          blurRadius: 8,
+                                          spreadRadius: 2,
+                                        ),
+                                      ]
+                                    : [],
                               ),
-                              boxShadow: selectedIndex == index
-                                  ? [
-                                      BoxShadow(
-                                        color: Colors.yellow.shade300,
-                                        blurRadius: 8,
-                                        spreadRadius: 2,
-                                      ),
-                                    ]
-                                  : [],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Image.asset(
-                                  vehicles[index]["icon"],
-                                  width: 50,
-                                  height: 50,
-                                  fit: BoxFit.contain,
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  vehicles[index]["label"],
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: Dimensions.fontSizeSmall,
-                                    fontWeight: FontWeight.bold,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Image.asset(
+                                    vehicles[index]["icon"],
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.contain,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ));
-                    }),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    vehicles[index]["label"],
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: Dimensions.fontSizeSmall,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ));
+                      }),
+                    ),
                   ),
                 ),
 

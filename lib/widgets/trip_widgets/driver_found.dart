@@ -172,7 +172,7 @@ class _DriverFoundWidgetState extends State<DriverFoundWidget> {
                   SizedBox(height: 8),
                   Text("Destination",
                       style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(locationProvider.requestedDestination ?? 'Loading...'),
+                  Text(locationProvider.requestedDestination),
                 ],
               ),
             ),

@@ -4,10 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
-import '../locators/service_locator.dart';
 import '../providers/app_state.dart';
 import '../providers/location_provider.dart';
-import '../services/call_sms.dart';
 import '../utils/dimensions.dart';
 import 'custom_text.dart';
 
@@ -17,8 +15,6 @@ class TripWidget extends StatefulWidget {
 }
 
 class _TripWidgetState extends State<TripWidget> {
-  final CallsAndMessagesService _service = locator<CallsAndMessagesService>();
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();

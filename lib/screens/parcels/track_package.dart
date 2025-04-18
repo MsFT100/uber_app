@@ -6,7 +6,6 @@ import '../../locators/service_locator.dart';
 import '../../providers/app_state.dart';
 import '../../providers/location_provider.dart';
 import '../../services/call_sms.dart';
-import '../../services/parcel_request.dart';
 import '../../utils/app_constants.dart';
 import '../../widgets/app_bar/app_bar.dart';
 import '../../widgets/custom_text.dart';
@@ -20,7 +19,6 @@ class TrackPackage extends StatefulWidget {
 }
 
 class _TrackPackageState extends State<TrackPackage> {
-  ParcelRequestServices _parcelServices = ParcelRequestServices();
   double totalPrice = 0;
 
   @override
@@ -157,7 +155,7 @@ class _TrackPackageState extends State<TrackPackage> {
                             size: 16,
                             weight: FontWeight.bold),
                         Text(
-                          "\ ksh ${totalPrice ?? 'Loading ...'}",
+                          "\ ksh ${totalPrice}",
                           style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,

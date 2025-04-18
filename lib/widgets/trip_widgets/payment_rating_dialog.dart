@@ -58,8 +58,6 @@ class _PaymentRatingDialogState extends State<PaymentRatingDialog> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppStateProvider>(context, listen: false);
-    final locationProvider =
-        Provider.of<LocationProvider>(context, listen: false);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
