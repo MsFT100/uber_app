@@ -1,0 +1,63 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id 'dev.flutter.flutter-gradle-plugin'
+    id 'com.google.gms.google-services'
+    id 'com.google.firebase.crashlytics'
+}
+
+android {
+    namespace 'com.buricode.msft'
+    compileSdkVersion 34
+    ndkVersion = "27.0.12077973"
+
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
+
+    defaultConfig {
+        applicationId 'com.buricode.msft'
+        minSdkVersion 23
+        targetSdkVersion 34
+        versionCode flutter.versionCode
+        versionName flutter.versionName
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("D:/AndroidStudioProjects/uber_app/my-release-key.keystore")
+            storePassword "gamerich2025"
+            keyAlias "my-key-alias"
+            keyPassword "gamerich2025"
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+}
+
+flutter {
+    source = '../..'
+}
+
+dependencies {
+
+    implementation 'com.google.firebase:firebase-messaging:23.4.1'
+    implementation('com.google.firebase:firebase-crashlytics')
+    implementation('com.google.firebase:firebase-analytics')
+    implementation platform('com.google.firebase:firebase-bom:33.9.0')
+    implementation("com.google.firebase:firebase-appcheck-debug:18.0.0")
+
+}
