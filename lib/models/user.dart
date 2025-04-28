@@ -68,6 +68,8 @@ class UserModel {
       "trips": _trips,
       "rating": _rating,
       "photoURL": _photoURL,
+      FREE_RIDES_REMAINING: _freeRidesRemaining,
+      FREE_RIDE_AMOUNT_REMAINING: _freeRideAmountRemaining,
     };
   }
 
