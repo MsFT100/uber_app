@@ -25,6 +25,19 @@ class UserModel {
   late final int _trips;
   late final double _rating;
 
+  late int _freeRidesRemaining;
+  late double _freeRideAmountRemaining;
+
+  // Setters
+  set freeRidesRemaining(int value) {
+    _freeRidesRemaining = value;
+  }
+
+  set freeRideAmountRemaining(double value) {
+    _freeRideAmountRemaining = value;
+  }
+
+
   // Getters
   String get name => _name;
   String get email => _email;
