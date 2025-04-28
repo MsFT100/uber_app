@@ -335,7 +335,7 @@ class UserProvider with ChangeNotifier {
     try {
       await _auth.sendPasswordResetEmail(email: email.text.trim());
       return "Success";
-    } on FirebaseException catch (e) {
+    } on FirebaseException {
       return ("Something Went Wrong. Check your Email");
     }
   }

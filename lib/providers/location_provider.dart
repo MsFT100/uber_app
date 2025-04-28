@@ -211,7 +211,7 @@ class LocationProvider with ChangeNotifier {
       _saveAddressToPrefs();
 
       // Save the country code in lowercase if it's not already set
-      if (prefs.getString(COUNTRY) == null && countryCode != null) {
+      if (prefs.getString(COUNTRY) == null) {
         String country = countryCode.toLowerCase();
         await prefs.setString(COUNTRY, country);
       }
@@ -351,9 +351,6 @@ class LocationProvider with ChangeNotifier {
   }
 
   addPickupMarker(LatLng position) {
-    if (pickupCoordinates == null) {
-      pickupCoordinates = position;
-    }
     _markers.add(Marker(
         markerId: MarkerId(PICKUP_MARKER_ID),
         position: position,
@@ -728,19 +725,17 @@ class LocationProvider with ChangeNotifier {
     Set<Marker> newMarkers = {};
 
     for (var driver in drivers) {
-      if (driver.position.lat != null && driver.position.lng != null) {
-        Marker marker = Marker(
-          markerId: MarkerId(driver.id),
-          position: LatLng(driver.position.lat, driver.position.lng!),
-          icon:
-              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          infoWindow: InfoWindow(
-            title: driver.name ?? "Driver",
-          ),
-        );
-        newMarkers.add(marker);
-      }
-    }
+      Marker marker = Marker(
+        markerId: MarkerId(driver.id),
+        position: LatLng(driver.position.lat, driver.position.lng),
+        icon:
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: InfoWindow(
+          title: driver.name ?? "Driver",
+        ),
+      );
+      newMarkers.add(marker);
+        }
     print("DriverMarkers Added:");
     _markers = newMarkers;
   }
