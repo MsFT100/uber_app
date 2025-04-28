@@ -1,13 +1,14 @@
 # Flutter Uber Clone / Taxi App
-#![](images/thumb.jpg)
+![](images/thumb.jpg)
 
 
 ## Overview
 Bucoride app is a full-featured ride-sharing platform inspired by Uber. It allows users to book rides, track drivers in real-time, and manage payments seamlessly. Drivers can post their availability, accept ride requests, and navigate to pick-up and drop-off locations.
-The app offers two user roles — Passengers and Drivers — each with personalized dashboards and features.
+
+The app offers two user roles — passengers and drivers — each with personalized dashboards and features.
 Key functionalities include live location tracking, ride booking and confirmation, trip history, in-app wallets, free ride promotions, referral bonuses, real-time chat between drivers and passengers, and secure authentication.
 
-Built with a scalable architecture and a clean UI, the Uber Clone App is designed to deliver a smooth and intuitive experience for both riders and drivers.
+Built with a scalable architecture and a clean UI, the Bucoride app is designed to deliver a smooth and intuitive experience for both riders and drivers.
 
 ## Developer instructions
 ---
