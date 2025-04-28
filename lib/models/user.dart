@@ -10,7 +10,10 @@ class UserModel {
   static const RATING = "rating";
   static const TOKEN = "token";
   static const PHOTO = "photo";
+  static const FREE_RIDES_REMAINING = "freeRidesRemaining";
+  static const FREE_RIDE_AMOUNT_REMAINING = "freeRideAmountRemaining";
 
+  
   late final String _id;
   late final String _name;
   late final String _email;
