@@ -95,6 +95,7 @@ class UserProvider with ChangeNotifier {
           return "🚗 🚗Something went wrong. We don't have your account in our database.";
         } else {
           _status = Status.Authenticated;
+          await reloadUser();
           notifyListeners();
           return "Success";
         }
@@ -162,6 +163,7 @@ class UserProvider with ChangeNotifier {
         }
 
         _status = Status.Authenticated;
+        await reloadUser();
         notifyListeners();
       }
 
@@ -301,6 +303,7 @@ class UserProvider with ChangeNotifier {
 
         _userModel = await _userServices.getUserById(_user!.uid);
         _status = Status.Authenticated;
+        await reloadUser();
         notifyListeners();
         return "Success";
       } else {
@@ -364,6 +367,7 @@ class UserProvider with ChangeNotifier {
   Future<void> updateUserData(UserModel userM) async {
     _userServices.updateUserData(userM);
     await reloadUserModel();
+    await reloadUser();
   }
 
   Future<void> updateProfilePic(XFile image) async {
@@ -390,6 +394,7 @@ class UserProvider with ChangeNotifier {
 
       // Reload Firestore user model if needed
       await reloadUserModel();
+      await reloadUser();
 
       notifyListeners();
     } catch (e) {
