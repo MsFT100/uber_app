@@ -486,4 +486,11 @@ class UserProvider with ChangeNotifier {
       print("Error fetching trips: $e");
     }
   }
+
+  Future<void> reloadUser() async {
+  if (_user != null) {
+    _userModel = await _userServices.getUserById(_user!.uid);
+    notifyListeners();
+  }
+}
 }
