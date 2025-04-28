@@ -50,6 +50,11 @@ class UserModel {
   int get trips => _trips;
   double get rating => _rating;
 
+
+  // free rides remaining
+  int get freeRidesRemaining => _freeRidesRemaining;
+  double get freeRideAmountRemaining => _freeRideAmountRemaining;
+
   // Add a setter for photoURL
   set photoURL(String url) {
     _photoURL = url;
