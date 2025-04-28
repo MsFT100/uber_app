@@ -71,4 +71,8 @@ class UserServices {
         .doc(userId)
         .update({"token": token});
   }
+
+  Future<void> updateUserFields(String uid, Map<String, dynamic> fields) async {
+    await _firebaseFirestore.collection(collection).doc(uid).update(fields);
+  }
 }
