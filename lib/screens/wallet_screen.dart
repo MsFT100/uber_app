@@ -1,4 +1,5 @@
 import 'package:BucoRide/models/user.dart';
+import 'package:BucoRide/utils/app_constants.dart';
 import 'package:BucoRide/widgets/app_bar/app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -77,6 +78,8 @@ class WalletScreen extends StatelessWidget {
   FloatingActionButton DeductRideBalanceFAB(
       UserModel user, UserProvider userProvider) {
     return FloatingActionButton(
+      backgroundColor: AppConstants.lightPrimary,
+      foregroundColor: Colors.white,
       tooltip: 'Deduct ride by Ksh.100/=',
       onPressed: () async {
         const double rideCost = 100;
@@ -101,6 +104,8 @@ class WalletScreen extends StatelessWidget {
 
   FloatingActionButton RefreshFAB(UserModel user, UserProvider userProvider) {
     return FloatingActionButton(
+      backgroundColor: AppConstants.lightPrimary,
+      foregroundColor: Colors.white,
       tooltip: 'Refresh balance',
       onPressed: () async {
         final refreshedUser = await UserServices().getUserById(user.id);
