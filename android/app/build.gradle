@@ -10,13 +10,14 @@ plugins {
 
 android {
     namespace 'com.buricode.msft'
-    compileSdkVersion 34
+    compileSdkVersion 35
     ndkVersion = "27.0.12077973"
 
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        coreLibraryDesugaringEnabled true 
     }
 
     kotlinOptions {
