@@ -493,9 +493,22 @@ class UserProvider with ChangeNotifier {
   }
 
   Future<void> reloadUser() async {
-  if (_user != null) {
-    _userModel = await _userServices.getUserById(_user!.uid);
+    if (_user != null) {
+      _userModel = await _userServices.getUserById(_user!.uid);
+      notifyListeners();
+    }
+  }
+
+  void setUser(UserModel userModel) {
+    _userModel = userModel;
     notifyListeners();
   }
-}
+
+  void updateFreeRides(int count, double amount) {
+    if (_userModel != null) {
+      _userModel!.freeRidesRemaining = count;
+      _userModel!.freeRideAmountRemaining = amount;
+      notifyListeners();
+    }
+  }
 }
