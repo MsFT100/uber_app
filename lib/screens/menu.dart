@@ -1,4 +1,5 @@
 import 'package:BucoRide/screens/trip_history.dart';
+import 'package:BucoRide/screens/wallet_screen.dart';
 import 'package:BucoRide/widgets/home_widgets/floating_nav_bar.dart';
 import 'package:BucoRide/widgets/home_widgets/home_widget.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -54,6 +55,7 @@ class _MenuState extends State<Menu> {
   // List of pages/screens for navigation
   final List<Widget> _pages = [
     MenuWidgetScreen(),
+    WalletScreen(),
     TripHistory(),
     ProfileScreen(), // Profile Screen
   ];
