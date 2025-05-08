@@ -49,23 +49,17 @@ Clone this repository by opening your terminal/CMD and change the current workin
 * When running the application using the `flutter run` command, it may take atleast a minute to install the build files on a physical device.
 ---
 
-
-## Contributor expectations
-Incase of a bug or you wish to make a contribution, create a new branch using the git command `git checkout -b <name of your branch>` and create a pull request. Wait for review.
-
-You can also open an issue using the `Issues` tab. The reported issue will be reviewed and a solution may be provided.
-
----
-## Miscellaneous
+#### Miscellaneous
 
 
 There are mainly two aspects to consider in order to have this project working:
 1. Don't forget to add your own google maps api into the androidmanifest.xml file
-2. This is not requered but you can conect the project to your firebase project by chamging the google-services.json file
+2. This is not required but you can connect the project to your firebase project by changing the google-services.json file
 
 
 #keytool -genkey -v -keystore my-release-key.keystore -keyalg RSA -keysize 2048 -validity 10000 -alias my-key-alias
 
+```powershell
 Windows PowerShell
 Copyright (C) Microsoft Corporation. All rights reserved.
 
@@ -93,3 +87,9 @@ Generating 2,048 bit RSA key pair and self-signed certificate (SHA256withRSA) wi
 for: CN=Gamerich Technologies, OU=Gamerich Technologies, O=Gamerich Technologies, L=Nairobi, ST=Nairobi, C=KE
 [Storing my-release-key.keystore]
 PS D:\AndroidStudioProjects\uber_app> 
+```
+
+## Contributor expectations
+Incase of a bug or you wish to make a contribution, create a new branch using the git command `git checkout -b <name of your branch>` and create a pull request. Wait for review.
+
+You can also open an issue using the `Issues` tab. The reported issue will be reviewed and a solution may be provided.
