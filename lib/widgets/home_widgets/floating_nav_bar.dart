@@ -26,6 +26,13 @@ class CustomBottomNavBar extends StatelessWidget {
           label: 'Home',
         ),
         CurvedNavigationBarItem(
+          child: Icon(
+            Icons.wallet,
+            color: Colors.white,
+          ),
+          label: 'Wallet',
+        ),
+        CurvedNavigationBarItem(
           child: Image.asset(
             Images.calenderIcon,
             width: Dimensions.iconSizeMedium,
