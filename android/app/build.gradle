@@ -10,13 +10,15 @@ plugins {
 
 android {
     namespace 'com.buricode.msft'
-    compileSdkVersion 34
-    ndkVersion = "27.0.12077973"
+    compileSdk = 34
+    ndkVersion = "29.0.13113456"
 
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        coreLibraryDesugaringEnabled true // Enable desugaring
+
     }
 
     kotlinOptions {
@@ -43,6 +45,7 @@ android {
         release {
             signingConfig signingConfigs.release
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
@@ -57,7 +60,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging:23.4.1'
     implementation('com.google.firebase:firebase-crashlytics')
     implementation('com.google.firebase:firebase-analytics')
-    implementation platform('com.google.firebase:firebase-bom:33.9.0')
-    implementation("com.google.firebase:firebase-appcheck-debug:18.0.0")
+    implementation platform('com.google.firebase:firebase-bom:33.8.0')
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 
 }
