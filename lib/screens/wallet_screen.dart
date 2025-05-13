@@ -26,52 +26,46 @@ class WalletScreen extends StatelessWidget {
         showNavBack: false,
         centerTitle: false,
       ),
-      body: WalletScreenBody(user),
-      floatingActionButton: FABColumn(user, userProvider),
+      body: WalletScreenBody(user, userProvider),
+      floatingActionButton: DeductRideBalanceFAB(user, userProvider),
     );
   }
 
-
-  Padding WalletScreenBody(UserModel user) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: ListView(
-        children: [
-          ListTile(
-            title: Text(
-              'Free rides remaining',
-              style: TextStyle(fontSize: 16.0),
+  Widget WalletScreenBody(UserModel user, UserProvider userProvider) {
+    return RefreshIndicator.adaptive(
+      onRefresh: () async {
+        final refreshedUser = await UserServices().getUserById(user.id);
+        userProvider.setUser(refreshedUser);
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ListView(
+          children: [
+            ListTile(
+              title: Text(
+                'Free rides remaining',
+                style: TextStyle(fontSize: 16.0),
+              ),
+              trailing: Text(
+                user.freeRidesRemaining.toString(),
+                style: TextStyle(fontSize: 16.0),
+              ),
             ),
-            trailing: Text(
-              user.freeRidesRemaining.toString(),
-              style: TextStyle(fontSize: 16.0),
+            const SizedBox(height: 20.0),
+            ListTile(
+              title: Text(
+                'Free rides balance',
+                style: TextStyle(fontSize: 16.0),
+              ),
+              trailing: Text(
+                'Kshs. ${user.freeRideAmountRemaining.toStringAsFixed(2)}/=',
+                style: TextStyle(fontSize: 16.0),
+              ),
             ),
-          ),
-          const SizedBox(height: 20.0),
-          ListTile(
-            title: Text(
-              'Free rides balance',
-              style: TextStyle(fontSize: 16.0),
-            ),
-            trailing: Text(
-              'Kshs. ${user.freeRideAmountRemaining.toStringAsFixed(2)}/=',
-              style: TextStyle(fontSize: 16.0),
-            ),
-          ),
-          const SizedBox(height: 30.0),
-        ],
+            const SizedBox(height: 30.0),
+          ],
+        ),
       ),
-    );
-  }
-
-  Column FABColumn(UserModel user, UserProvider userProvider) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        RefreshFAB(user, userProvider),
-        SizedBox(height: 12.0),
-        DeductRideBalanceFAB(user, userProvider),
-      ],
     );
   }
 
@@ -99,19 +93,6 @@ class WalletScreen extends StatelessWidget {
         userProvider.updateFreeRides(newRides, newAmount);
       },
       child: Icon(Icons.credit_card_rounded),
-    );
-  }
-
-  FloatingActionButton RefreshFAB(UserModel user, UserProvider userProvider) {
-    return FloatingActionButton(
-      backgroundColor: AppConstants.lightPrimary,
-      foregroundColor: Colors.white,
-      tooltip: 'Refresh balance',
-      onPressed: () async {
-        final refreshedUser = await UserServices().getUserById(user.id);
-        userProvider.setUser(refreshedUser);
-      },
-      child: Icon(Icons.refresh_rounded),
     );
   }
 }
