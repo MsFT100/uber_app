@@ -95,17 +95,4 @@ class WalletScreen extends StatelessWidget {
       child: Icon(Icons.credit_card_rounded),
     );
   }
-
-  FloatingActionButton RefreshFAB(UserModel user, UserProvider userProvider) {
-    return FloatingActionButton(
-      backgroundColor: AppConstants.lightPrimary,
-      foregroundColor: Colors.white,
-      tooltip: 'Refresh balance',
-      onPressed: () async {
-        final refreshedUser = await UserServices().getUserById(user.id);
-        userProvider.setUser(refreshedUser);
-      },
-      child: Icon(Icons.refresh_rounded),
-    );
-  }
 }
