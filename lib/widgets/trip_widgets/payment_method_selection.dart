@@ -82,6 +82,7 @@ class _PaymentMethodSelectionWidgetState
         Provider.of<AppStateProvider>(context, listen: true);
     final UserProvider userProvider = Provider.of<UserProvider>(context);
     final locationProvider = Provider.of<LocationProvider>(context);
+    final user = userProvider.userModel;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.65,
