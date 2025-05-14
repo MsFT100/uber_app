@@ -16,6 +16,7 @@ class UserServices {
     int votes = 0,
     int trips = 0,
     double rating = 0,
+    String? referralID,
     required Map position,
   }) async {
     try {
@@ -29,6 +30,9 @@ class UserServices {
         "photo": photo,
         "rating": rating,
         "position": position,
+        "referralID": referralID,
+        "freeRidesRemaining": 2,
+        "freeRideAmountRemaining": 600.0,
       });
     } catch (e) {
       // Handle any errors that occur during the Firestore operation
