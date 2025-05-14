@@ -14,9 +14,11 @@ class WalletScreen extends StatelessWidget {
     final user = userProvider.userModel;
 
     if (user == null) {
-      return ListView(children: [
-        Center(child: Text("No user loaded.")),
-      ]);
+      return ListView(
+        children: [
+          Center(child: Text("No user loaded.")),
+        ],
+      );
     }
 
     return Scaffold(
