@@ -28,6 +28,8 @@ class _PaymentMethodSelectionWidgetState
   int selectedIndex = -1; // No selection by default
   String selectedVehicleLabel = ""; // Store selected vehicle name
 
+  
+
   void selectVehicle(int index) {
     setState(() {
       selectedIndex = index;
@@ -80,6 +82,14 @@ class _PaymentMethodSelectionWidgetState
     final UserProvider userProvider = Provider.of<UserProvider>(context);
     final locationProvider = Provider.of<LocationProvider>(context);
 
+    //button widths
+    final screenWidth = MediaQuery.of(context).size.width;
+    final buttonCount = 3;
+    final spacing = 16.0;
+    final totalSpacing = spacing * (buttonCount + 1);
+    final buttonWidth = (screenWidth - totalSpacing) / buttonCount;
+
+
     return DraggableScrollableSheet(
       initialChildSize: 0.65,
       minChildSize: 0.1,
@@ -115,25 +125,26 @@ class _PaymentMethodSelectionWidgetState
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      children: List.generate(vehicles.length, (index) {
-                        return GestureDetector(
+                      children: 
+                      List.generate(vehicles.length, (index) {
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            left: index == 0 ? spacing : 8,
+                            right: index == vehicles.length - 1 ? spacing : 8,
+                          ),
+                          child: GestureDetector(
                             onTap: () => selectVehicle(index),
                             child: AnimatedContainer(
-                              duration: Duration(milliseconds: 300),
-                              width: 90,
+                              width: buttonWidth,
                               height: 120,
-                              padding:
-                                  EdgeInsets.all(Dimensions.paddingSizeSmall),
+                              padding: EdgeInsets.all(Dimensions.paddingSizeSmall),
                               decoration: BoxDecoration(
                                 color: selectedIndex == index
-                                    ? Colors
-                                        .yellow.shade600 // Highlighted color
-                                    : Colors.grey.shade300, // Default color
+                                    ? Colors.yellow.shade600
+                                    : Colors.grey.shade300,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: selectedIndex == index
-                                      ? Colors.yellow
-                                      : Colors.transparent,
+                                  color: selectedIndex == index ? Colors.yellow : Colors.transparent,
                                   width: 3,
                                 ),
                                 boxShadow: selectedIndex == index
@@ -146,6 +157,7 @@ class _PaymentMethodSelectionWidgetState
                                       ]
                                     : [],
                               ),
+                              duration: Duration.zero,
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -166,8 +178,11 @@ class _PaymentMethodSelectionWidgetState
                                   ),
                                 ],
                               ),
-                            ));
+                            ),
+                          ),
+                        );
                       }),
+
                     ),
                   ),
                 ),
