@@ -1,5 +1,4 @@
 import 'package:BucoRide/models/user.dart';
-import 'package:BucoRide/utils/app_constants.dart';
 import 'package:BucoRide/widgets/app_bar/app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -27,7 +26,6 @@ class WalletScreen extends StatelessWidget {
         centerTitle: false,
       ),
       body: WalletScreenBody(user, userProvider),
-      floatingActionButton: DeductRideBalanceFAB(user, userProvider),
     );
   }
 
@@ -52,47 +50,9 @@ class WalletScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20.0),
-            ListTile(
-              title: Text(
-                'Free rides balance',
-                style: TextStyle(fontSize: 16.0),
-              ),
-              trailing: Text(
-                'Kshs. ${user.freeRideAmountRemaining.toStringAsFixed(2)}/=',
-                style: TextStyle(fontSize: 16.0),
-              ),
-            ),
-            const SizedBox(height: 30.0),
           ],
         ),
       ),
-    );
-  }
-
-  FloatingActionButton DeductRideBalanceFAB(
-      UserModel user, UserProvider userProvider) {
-    return FloatingActionButton(
-      backgroundColor: AppConstants.lightPrimary,
-      foregroundColor: Colors.white,
-      tooltip: 'Deduct ride by Ksh.100/=',
-      onPressed: () async {
-        const double rideCost = 100;
-
-        int newRides =
-            user.freeRidesRemaining > 0 ? user.freeRidesRemaining - 1 : 0;
-        double newAmount = user.freeRideAmountRemaining - rideCost;
-
-        if (newAmount < 0) newAmount = 0;
-
-        // Simulate backend update (you can also call a real method)
-        await UserServices().updateUserData(user
-          ..freeRidesRemaining = newRides
-          ..freeRideAmountRemaining = newAmount);
-
-        // Update in provider
-        userProvider.updateFreeRides(newRides, newAmount);
-      },
-      child: Icon(Icons.credit_card_rounded),
     );
   }
 }
