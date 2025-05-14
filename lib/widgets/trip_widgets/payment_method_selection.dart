@@ -1,6 +1,7 @@
 import 'package:BucoRide/controllers/free_ride_controller.dart';
 import 'package:BucoRide/helpers/constants.dart';
 import 'package:BucoRide/providers/location_provider.dart';
+import 'package:BucoRide/services/ride_requests.dart';
 import 'package:BucoRide/widgets/scroll_sheet_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -485,6 +486,31 @@ class _PaymentMethodSelectionWidgetState
                                 locationProvider.cancelRequest();
                                 locationProvider.show =
                                     Show.DESTINATION_SELECTION;
+
+                                // if user has free rides and cancelled request restore ride
+                                if (appState.ridePrice <= 600.0) {
+                                  // check if the user has free remaining rides
+                                  if (_freeRideController.hasFreeRideAvailable(user)) {
+                                    /* 
+                                    check if remaining rides is greater than zero and less than
+                                    or equal to 2 and restore unused ride. For example, if a user
+                                    has 2 free rides and they request a ride whose fare is less than Kshs. 600/=,
+                                    if they cancel the ride request, restore the unused free ride.
+                                     */
+                                    final newRides =
+                                        user.freeRidesRemaining > 0 &&
+                                                user.freeRidesRemaining <= 2
+                                            ? user.freeRidesRemaining + 1
+                                            : 0;
+                                    // update user data
+                                    await UserServices().updateUserData(
+                                        user..freeRidesRemaining = newRides);
+
+                                    // Update in provider
+                                    userProvider.updateFreeRides(newRides);
+                                    return;
+                                  }
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.redAccent,
