@@ -436,19 +436,27 @@ class _PaymentMethodSelectionWidgetState
                                 // check if the user has free rides
                                 if (appState.ridePrice <= 600.0) {
                                   // check if the user has free remaining rides
-                                  if (_freeRideController.hasFreeRideAvailable(user!)) {
-                                    final newRides = user.freeRidesRemaining > 0 ? user.freeRidesRemaining - 1: 0;
+                                  if (_freeRideController
+                                      .hasFreeRideAvailable(user)) {
+                                    final newRides = user.freeRidesRemaining > 0
+                                        ? user.freeRidesRemaining - 1
+                                        : 0;
                                     // update user data
-                                    await UserServices().updateUserData(user..freeRidesRemaining = newRides);
+                                    await UserServices().updateUserData(
+                                        user..freeRidesRemaining = newRides);
+                                    await RideRequestServices().updateRequest({
+                                      "id": user.id,
+                                      "isFree": true, // set free ride to true
+                                    });
 
                                     // Update in provider
                                     userProvider.updateFreeRides(newRides);
 
                                     // show a snackbar
                                     appState.showCustomSnackBar(
-                                      context,
-                                      "You have been offered a free ride!",
-                                      Colors.green.shade400);
+                                        context,
+                                        "You have been offered a free ride!",
+                                        Colors.green.shade400);
                                     return;
                                   }
                                 }
