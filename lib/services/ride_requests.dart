@@ -13,6 +13,7 @@ class RideRequestServices {
     required Map<String, dynamic> destination,
     required Map<String, dynamic> position,
     required Map<String, dynamic> distance,
+    bool isFreeRide = false,
   }) {
     _firebaseFirestore.collection(collection).doc(id).set({
       "id": id,
@@ -24,6 +25,7 @@ class RideRequestServices {
       "destination": destination,
       "distance": distance,
       "type": vehicleType,
+      "isFree": isFreeRide,
       "createdAt": FieldValue.serverTimestamp(),
     });
     print("=======================Successfully Created Ride Request");
