@@ -26,15 +26,10 @@ class UserModel {
   late final double _rating;
 
   late int _freeRidesRemaining;
-  late double _freeRideAmountRemaining;
 
   // Setters
   set freeRidesRemaining(int value) {
     _freeRidesRemaining = value;
-  }
-
-  set freeRideAmountRemaining(double value) {
-    _freeRideAmountRemaining = value;
   }
 
 
@@ -53,7 +48,6 @@ class UserModel {
 
   // free rides remaining
   int get freeRidesRemaining => _freeRidesRemaining;
-  double get freeRideAmountRemaining => _freeRideAmountRemaining;
 
   // Add a setter for photoURL
   set photoURL(String url) {
@@ -69,7 +63,6 @@ class UserModel {
       "rating": _rating,
       "photoURL": _photoURL,
       FREE_RIDES_REMAINING: _freeRidesRemaining,
-      FREE_RIDE_AMOUNT_REMAINING: _freeRideAmountRemaining,
     };
   }
 
@@ -98,8 +91,6 @@ class UserModel {
     _votes = data?[VOTES] ?? 0; // Default to 0
     _trips = data?[TRIPS] ?? 0;
     _rating = (data?[RATING] ?? 0).toDouble(); // Ensure it's double
-
     _freeRidesRemaining = data?[FREE_RIDES_REMAINING] ?? 2; // default 2
-    _freeRideAmountRemaining = (data?[FREE_RIDE_AMOUNT_REMAINING] ?? 600).toDouble(); // default KES 600
   }
 }
