@@ -29,6 +29,7 @@ class _PaymentMethodSelectionWidgetState
     extends State<PaymentMethodSelectionWidget> {
   int selectedIndex = -1; // No selection by default
   String selectedVehicleLabel = ""; // Store selected vehicle name
+  final FreeRideController _freeRideController = FreeRideController();
 
   void selectVehicle(int index) {
     setState(() {
