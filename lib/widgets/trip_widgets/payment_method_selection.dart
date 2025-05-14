@@ -317,48 +317,72 @@ class _PaymentMethodSelectionWidgetState
                       ],
                     ),
                     const SizedBox(height: 10),
-                    CustomText(
-                      text: "\ksh: ${appState.ridePrice.toStringAsFixed(2)}",
-                      size: 16,
-                      weight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
+                    // show text "Free" if the user has free rides left  and fare is below Kshs.600/=
+                    _freeRideController.hasFreeRideAvailable(user!) &&
+                            appState.ridePrice <= 600
+                        ? Container(
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4.0),
+                                color: AppConstants.lightPrimary,
+                                shape: BoxShape.rectangle),
+                            padding: EdgeInsets.all(4.0),
+                            child: CustomText(
+                              text: "Free Ride",
+                              size: 14,
+                              weight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          )
+                        : CustomText(
+                            text:
+                                "ksh: ${appState.ridePrice.toStringAsFixed(2)}",
+                            size: 16,
+                            weight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
                   ],
                 ),
                 const Divider(height: 30, thickness: 1),
-                CustomText(
-                  text: "Select Payment Method",
-                  size: Dimensions.fontSizeSmall,
-                  weight: FontWeight.bold,
-                ),
+                // show if the user does not have free rides left
+                if (!_freeRideController.hasFreeRideAvailable(user))
+                  CustomText(
+                    text: "Select Payment Method",
+                    size: Dimensions.fontSizeSmall,
+                    weight: FontWeight.bold,
+                  ),
                 const SizedBox(height: Dimensions.paddingSize),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        appState.showCustomSnackBar(context,
-                            "Method not available!", AppConstants.darkPrimary);
-                      },
-                      icon: const Icon(Icons.credit_card),
-                      label: const CustomText(text: "Card"),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.blue, width: 1.5),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
+                    if (!_freeRideController.hasFreeRideAvailable(user))
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          appState.showCustomSnackBar(
+                              context,
+                              "Method not available!",
+                              AppConstants.darkPrimary);
+                        },
+                        icon: const Icon(Icons.credit_card),
+                        label: const CustomText(text: "Card"),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.blue, width: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                        ),
                       ),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.monetization_on),
-                      label: const CustomText(text: "Cash"),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        side: const BorderSide(color: Colors.blue, width: 1.5),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
+                    if (!_freeRideController.hasFreeRideAvailable(user))
+                      OutlinedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(Icons.monetization_on),
+                        label: const CustomText(text: "Cash"),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          side:
+                              const BorderSide(color: Colors.blue, width: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                        ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
