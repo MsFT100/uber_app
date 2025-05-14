@@ -55,7 +55,6 @@ class _MenuState extends State<Menu> {
   // List of pages/screens for navigation
   final List<Widget> _pages = [
     MenuWidgetScreen(),
-    WalletScreen(),
     TripHistory(),
     ProfileScreen(), // Profile Screen
   ];

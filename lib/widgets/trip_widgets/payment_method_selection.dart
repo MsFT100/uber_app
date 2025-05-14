@@ -1,5 +1,7 @@
+import 'package:BucoRide/controllers/free_ride_controller.dart';
 import 'package:BucoRide/helpers/constants.dart';
 import 'package:BucoRide/providers/location_provider.dart';
+import 'package:BucoRide/services/ride_requests.dart';
 import 'package:BucoRide/widgets/scroll_sheet_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -8,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../helpers/style.dart';
 import '../../providers/app_state.dart';
 import '../../providers/user.dart';
+import '../../services/user.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/dimensions.dart';
 import '../../utils/images.dart';
@@ -27,6 +30,7 @@ class _PaymentMethodSelectionWidgetState
     extends State<PaymentMethodSelectionWidget> {
   int selectedIndex = -1; // No selection by default
   String selectedVehicleLabel = ""; // Store selected vehicle name
+  final FreeRideController _freeRideController = FreeRideController();
 
   void selectVehicle(int index) {
     setState(() {
@@ -79,6 +83,7 @@ class _PaymentMethodSelectionWidgetState
         Provider.of<AppStateProvider>(context, listen: true);
     final UserProvider userProvider = Provider.of<UserProvider>(context);
     final locationProvider = Provider.of<LocationProvider>(context);
+    final user = userProvider.userModel;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.65,
@@ -313,48 +318,72 @@ class _PaymentMethodSelectionWidgetState
                       ],
                     ),
                     const SizedBox(height: 10),
-                    CustomText(
-                      text: "\ksh: ${appState.ridePrice.toStringAsFixed(2)}",
-                      size: 16,
-                      weight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
+                    // show text "Free" if the user has free rides left  and fare is below Kshs.600/=
+                    _freeRideController.hasFreeRideAvailable(user!) &&
+                            appState.ridePrice <= 600
+                        ? Container(
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4.0),
+                                color: AppConstants.lightPrimary,
+                                shape: BoxShape.rectangle),
+                            padding: EdgeInsets.all(4.0),
+                            child: CustomText(
+                              text: "Free Ride",
+                              size: 14,
+                              weight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          )
+                        : CustomText(
+                            text:
+                                "ksh: ${appState.ridePrice.toStringAsFixed(2)}",
+                            size: 16,
+                            weight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
                   ],
                 ),
                 const Divider(height: 30, thickness: 1),
-                CustomText(
-                  text: "Select Payment Method",
-                  size: Dimensions.fontSizeSmall,
-                  weight: FontWeight.bold,
-                ),
+                // show if the user does not have free rides left
+                if (!_freeRideController.hasFreeRideAvailable(user))
+                  CustomText(
+                    text: "Select Payment Method",
+                    size: Dimensions.fontSizeSmall,
+                    weight: FontWeight.bold,
+                  ),
                 const SizedBox(height: Dimensions.paddingSize),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        appState.showCustomSnackBar(context,
-                            "Method not available!", AppConstants.darkPrimary);
-                      },
-                      icon: const Icon(Icons.credit_card),
-                      label: const CustomText(text: "Card"),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.blue, width: 1.5),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
+                    if (!_freeRideController.hasFreeRideAvailable(user))
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          appState.showCustomSnackBar(
+                              context,
+                              "Method not available!",
+                              AppConstants.darkPrimary);
+                        },
+                        icon: const Icon(Icons.credit_card),
+                        label: const CustomText(text: "Card"),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.blue, width: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                        ),
                       ),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.monetization_on),
-                      label: const CustomText(text: "Cash"),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        side: const BorderSide(color: Colors.blue, width: 1.5),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
+                    if (!_freeRideController.hasFreeRideAvailable(user))
+                      OutlinedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(Icons.monetization_on),
+                        label: const CustomText(text: "Cash"),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          side:
+                              const BorderSide(color: Colors.blue, width: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                        ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -404,6 +433,34 @@ class _PaymentMethodSelectionWidgetState
                                   destinationCoordinates:
                                       locationProvider.destinationCoordinates,
                                 );
+
+                                // check if the user has free rides
+                                if (appState.ridePrice <= 600.0) {
+                                  // check if the user has free remaining rides
+                                  if (_freeRideController
+                                      .hasFreeRideAvailable(user)) {
+                                    final newRides = user.freeRidesRemaining > 0
+                                        ? user.freeRidesRemaining - 1
+                                        : 0;
+                                    // update user data
+                                    await UserServices().updateUserData(
+                                        user..freeRidesRemaining = newRides);
+                                    await RideRequestServices().updateRequest({
+                                      "id": user.id,
+                                      "isFree": true, // set free ride to true
+                                    });
+
+                                    // Update in provider
+                                    userProvider.updateFreeRides(newRides);
+
+                                    // show a snackbar
+                                    appState.showCustomSnackBar(
+                                        context,
+                                        "You have been offered a free ride!",
+                                        Colors.green.shade400);
+                                    return;
+                                  }
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: black,
@@ -429,6 +486,31 @@ class _PaymentMethodSelectionWidgetState
                                 locationProvider.cancelRequest();
                                 locationProvider.show =
                                     Show.DESTINATION_SELECTION;
+
+                                // if user has free rides and cancelled request restore ride
+                                if (appState.ridePrice <= 600.0) {
+                                  // check if the user has free remaining rides
+                                  if (_freeRideController.hasFreeRideAvailable(user)) {
+                                    /* 
+                                    check if remaining rides is greater than zero and less than
+                                    or equal to 2 and restore unused ride. For example, if a user
+                                    has 2 free rides and they request a ride whose fare is less than Kshs. 600/=,
+                                    if they cancel the ride request, restore the unused free ride.
+                                     */
+                                    final newRides =
+                                        user.freeRidesRemaining > 0 &&
+                                                user.freeRidesRemaining <= 2
+                                            ? user.freeRidesRemaining + 1
+                                            : 0;
+                                    // update user data
+                                    await UserServices().updateUserData(
+                                        user..freeRidesRemaining = newRides);
+
+                                    // Update in provider
+                                    userProvider.updateFreeRides(newRides);
+                                    return;
+                                  }
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.redAccent,

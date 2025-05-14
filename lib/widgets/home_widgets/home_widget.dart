@@ -84,7 +84,7 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
 
   Widget _buildHeader(UserProvider userProvider, String? address) {
     return Container(
-      height: 140,
+      height: 156,
       decoration: BoxDecoration(
         color: AppConstants.lightPrimary,
         borderRadius: const BorderRadius.only(
@@ -92,7 +92,7 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
           bottomRight: Radius.circular(25),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -103,7 +103,21 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
                 color: Colors.black45,
                 fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8.0),
+          Row(
+            children: [
+              Icon(Icons.car_repair, color: Colors.white),
+              const SizedBox(width: 8.0),
+              Text(
+                'Free Rides: ${userProvider.userModel?.freeRidesRemaining}',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16.0,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4.0),
           Row(
             children: [
               const Icon(Icons.location_on, color: Colors.white, size: 20),

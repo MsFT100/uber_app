@@ -504,10 +504,9 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void updateFreeRides(int count, double amount) {
+  void updateFreeRides(int count) {
     if (_userModel != null) {
       _userModel!.freeRidesRemaining = count;
-      _userModel!.freeRideAmountRemaining = amount;
       notifyListeners();
     }
   }
