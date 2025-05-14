@@ -1,3 +1,4 @@
+import 'package:BucoRide/controllers/free_ride_controller.dart';
 import 'package:BucoRide/helpers/constants.dart';
 import 'package:BucoRide/providers/location_provider.dart';
 import 'package:BucoRide/widgets/scroll_sheet_bar.dart';
@@ -8,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../helpers/style.dart';
 import '../../providers/app_state.dart';
 import '../../providers/user.dart';
+import '../../services/user.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/dimensions.dart';
 import '../../utils/images.dart';
