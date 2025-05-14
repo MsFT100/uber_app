@@ -32,7 +32,7 @@ class RideRequestServices {
   }
 
   // Update Ride Request (e.g., when driver accepts)
-  void updateRequest(Map<String, dynamic> values) {
+  Future<void> updateRequest(Map<String, dynamic> values) async {
     _firebaseFirestore.collection(collection).doc(values['id']).update(values);
   }
 
