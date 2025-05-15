@@ -69,6 +69,12 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
                 children: [
                   BannerView(),
                   const SizedBox(height: Dimensions.paddingSize),
+
+                  // banner that shows a user has free rides
+                  // show banner only if the user has free rides
+                  if (_freeRideController.hasFreeRideAvailable(userProvider.userModel!))
+                    FreeRideOfferBanner(userProvider: userProvider),
+                  const SizedBox(height: Dimensions.paddingSize),
                   _buildButtons(locationProvider),
                   const SizedBox(height: Dimensions.paddingSize),
                   HomeSearchWidget(),
