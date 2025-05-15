@@ -1,3 +1,4 @@
+import 'package:BucoRide/controllers/free_ride_controller.dart';
 import 'package:BucoRide/helpers/screen_navigation.dart';
 import 'package:BucoRide/providers/app_state.dart';
 import 'package:BucoRide/providers/location_provider.dart';
@@ -14,6 +15,7 @@ import '../../utils/dimensions.dart';
 import '../driver_map.dart';
 import '../loading_widgets/loading_location.dart';
 import 'banner_view.dart';
+import 'free_ride_offer_banner.dart';
 import 'home_search_screen.dart';
 
 class MenuWidgetScreen extends StatefulWidget {
@@ -46,6 +48,7 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
         Provider.of<LocationProvider>(context, listen: true);
     final position = locationProvider.currentPosition;
     final address = locationProvider.locationAddress;
+    final FreeRideController _freeRideController = FreeRideController();
 
     if (position == null) {
       locationProvider.fetchLocation();
@@ -66,6 +69,12 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
                 children: [
                   BannerView(),
                   const SizedBox(height: Dimensions.paddingSize),
+
+                  // banner that shows a user has free rides
+                  // show banner only if the user has free rides
+                  if (_freeRideController.hasFreeRideAvailable(userProvider.userModel!))
+                    FreeRideOfferBanner(userProvider: userProvider),
+                  const SizedBox(height: Dimensions.paddingSize),
                   _buildButtons(locationProvider),
                   const SizedBox(height: Dimensions.paddingSize),
                   HomeSearchWidget(),
@@ -84,7 +93,7 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
 
   Widget _buildHeader(UserProvider userProvider, String? address) {
     return Container(
-      height: 156,
+      height: 116.0,
       decoration: BoxDecoration(
         color: AppConstants.lightPrimary,
         borderRadius: const BorderRadius.only(
@@ -92,7 +101,7 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
           bottomRight: Radius.circular(25),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -102,20 +111,6 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
                 fontSize: Dimensions.fontSizeLarge,
                 color: Colors.black45,
                 fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8.0),
-          Row(
-            children: [
-              Icon(Icons.car_repair, color: Colors.white),
-              const SizedBox(width: 8.0),
-              Text(
-                'Free Rides: ${userProvider.userModel?.freeRidesRemaining}',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16.0,
-                ),
-              ),
-            ],
           ),
           const SizedBox(height: 4.0),
           Row(
