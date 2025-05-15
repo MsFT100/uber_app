@@ -112,20 +112,6 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
                 color: Colors.black45,
                 fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8.0),
-          Row(
-            children: [
-              Icon(Icons.car_repair, color: Colors.white),
-              const SizedBox(width: 8.0),
-              Text(
-                'Free Rides: ${userProvider.userModel?.freeRidesRemaining}',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16.0,
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 4.0),
           Row(
             children: [
