@@ -48,6 +48,7 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
         Provider.of<LocationProvider>(context, listen: true);
     final position = locationProvider.currentPosition;
     final address = locationProvider.locationAddress;
+    final FreeRideController _freeRideController = FreeRideController();
 
     if (position == null) {
       locationProvider.fetchLocation();
