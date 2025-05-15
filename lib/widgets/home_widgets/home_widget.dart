@@ -1,3 +1,4 @@
+import 'package:BucoRide/controllers/free_ride_controller.dart';
 import 'package:BucoRide/helpers/screen_navigation.dart';
 import 'package:BucoRide/providers/app_state.dart';
 import 'package:BucoRide/providers/location_provider.dart';
@@ -14,6 +15,7 @@ import '../../utils/dimensions.dart';
 import '../driver_map.dart';
 import '../loading_widgets/loading_location.dart';
 import 'banner_view.dart';
+import 'free_ride_offer_banner.dart';
 import 'home_search_screen.dart';
 
 class MenuWidgetScreen extends StatefulWidget {
