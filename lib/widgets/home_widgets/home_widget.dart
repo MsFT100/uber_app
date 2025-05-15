@@ -93,7 +93,7 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
 
   Widget _buildHeader(UserProvider userProvider, String? address) {
     return Container(
-      height: 156,
+      height: 116.0,
       decoration: BoxDecoration(
         color: AppConstants.lightPrimary,
         borderRadius: const BorderRadius.only(
@@ -101,7 +101,7 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
           bottomRight: Radius.circular(25),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
