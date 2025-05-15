@@ -1,5 +1,4 @@
 import 'package:BucoRide/screens/trip_history.dart';
-import 'package:BucoRide/screens/wallet_screen.dart';
 import 'package:BucoRide/widgets/home_widgets/floating_nav_bar.dart';
 import 'package:BucoRide/widgets/home_widgets/home_widget.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
