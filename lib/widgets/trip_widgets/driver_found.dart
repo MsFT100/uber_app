@@ -136,15 +136,21 @@ class _DriverFoundWidgetState extends State<DriverFoundWidget> {
             style: TextStyle(
                 fontSize: Dimensions.fontSizeDefault, color: Colors.black),
           ),
+          // SizedBox(
+          //   width: Dimensions.paddingSize,
+          // ),
+          // Text(
+          //   appState.driverModel?.phone ?? '',
+          //   textAlign: TextAlign.center,
+          //   style: TextStyle(
+          //       fontSize: Dimensions.fontSizeDefault, color: Colors.black),
+          // ),
         ],
       ),
       trailing: IconButton(
         icon: Icon(Icons.call, color: Colors.green, size: 30),
         onPressed: () {
-          final phone = appState.driverModel?.phone;
-          if (phone != null) {
-            _service.call(phone);
-          }
+            _service.call(appState.driverModel!.phone);
         },
       ),
     );
@@ -188,7 +194,7 @@ class _DriverFoundWidgetState extends State<DriverFoundWidget> {
       children: [
         CustomText(text: "Ride Price", size: 16, weight: FontWeight.bold),
         Text(
-          "\$${appState.ridePrice.toStringAsFixed(2)}",
+          "\Ksh ${appState.ridePrice.toStringAsFixed(0)}",
           style: TextStyle(
               fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
         ),

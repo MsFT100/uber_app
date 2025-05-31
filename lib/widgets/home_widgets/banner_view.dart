@@ -1,3 +1,5 @@
+import 'package:BucoRide/helpers/screen_navigation.dart';
+import 'package:BucoRide/screens/home.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 
@@ -43,9 +45,7 @@ class _BannerViewState extends State<BannerView> {
             itemBuilder: (context, index, _) {
               return InkWell(
                 onTap: () {
-                  // Handle the banner tap, like opening a link
-                  debugPrint("Banner $index clicked");
-                  // You can navigate to another screen or show something
+                  changeScreen(context, HomePage());
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 2),

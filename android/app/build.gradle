@@ -10,26 +10,26 @@ plugins {
 
 android {
     namespace 'com.buricode.msft'
-    compileSdk = 34
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = "29.0.13113456"
 
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
         coreLibraryDesugaringEnabled true // Enable desugaring
 
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = JavaVersion.VERSION_11
     }
 
     defaultConfig {
         applicationId 'com.buricode.msft'
-        minSdkVersion 23
-        targetSdkVersion 34
-        versionCode flutter.versionCode
+        minSdk = 23
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode.toInteger()
         versionName flutter.versionName
     }
 

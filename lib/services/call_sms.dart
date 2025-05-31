@@ -1,7 +1,7 @@
 import 'package:url_launcher/url_launcher.dart';
 
 class CallsAndMessagesService {
-  void call(String number) => launchUrl("tel:$number" as Uri);
-  void sendSms(String number) => launchUrl("sms:$number" as Uri);
-  void sendEmail(String email) => launchUrl("mailto:$email" as Uri);
+  void call(String number) => launchUrl(Uri.parse("tel:$number"));
+  void sendSms(String number) => launchUrl(Uri.parse("sms:$number"));
+  void sendEmail(String email) => launchUrl(Uri.parse("mailto:$email"));
 }
