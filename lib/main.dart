@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:BucoRide/providers/app_state.dart';
 import 'package:BucoRide/providers/location_provider.dart';
 import 'package:BucoRide/providers/user.dart';
-import 'package:BucoRide/screens/splash.dart';
+import 'package:BucoRide/screens/permission_gate.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
