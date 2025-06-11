@@ -9,6 +9,10 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
 
+    <!-- Permission to access location for Android 11 and below -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"
+    android:maxSdkVersion="32" />
+
     <application
         android:label="Bucoride"
         android:name="${applicationName}"

@@ -183,7 +183,7 @@ class _TripWidgetState extends State<TripWidget> {
                   appState.cancelRequestListener();
                 },
                 child: CustomText(text: "END MY TRIP", color: Colors.white),
-              ).animate().fadeIn(duration: 900.ms).scale(begin: 0.9, end: 1.0),
+              ).animate().fadeIn(duration: 900.ms).scale(begin: Offset(0.9, 0.9), end: Offset(1.0, 1.0)),
             ],
           ),
         );
