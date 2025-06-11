@@ -62,7 +62,7 @@ void main() async {
       //navigatorKey: firebaseApi.navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData.light(),
-      home: Splash(), // Directly pass Splash here
+      home: LocationPermissionGate(), // display this screen before the splash screen
     ),
   ));
 }
