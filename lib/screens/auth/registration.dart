@@ -236,19 +236,25 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                                   return;
                                 }
 
+                                try {
                                 String resultMessage = await authProvider
-                                    .signUp(profileImage: _profileImage!);
+                                      .signUp(profileImage: _selectedImage!);
                                 if (resultMessage == "Success") {
                                   changeScreenReplacement(
-                                      context, LoginScreen());
+                                      context,
+                                      LoginScreen(),
+                                    );
                                   showError(
                                       "Account Creation Successful. Login",
-                                      appState);
+                                      appState,
+                                    );
+                                    authProvider.clearController();
                                 } else {
                                   showError(resultMessage, appState);
                                 }
-                                authProvider.clearController();
-
+                                } catch (e) {
+                                  showError("$e", appState);
+                                }
                                 profileImageUrl = null;
                               },
                               child: Container(
