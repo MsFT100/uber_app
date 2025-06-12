@@ -237,21 +237,21 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                                 }
 
                                 try {
-                                String resultMessage = await authProvider
+                                  String resultMessage = await authProvider
                                       .signUp(profileImage: _selectedImage!);
-                                if (resultMessage == "Success") {
-                                  changeScreenReplacement(
+                                  if (resultMessage == "Success") {
+                                    changeScreenReplacement(
                                       context,
                                       LoginScreen(),
                                     );
-                                  showError(
+                                    showError(
                                       "Account Creation Successful. Login",
                                       appState,
                                     );
                                     authProvider.clearController();
-                                } else {
-                                  showError(resultMessage, appState);
-                                }
+                                  } else {
+                                    showError(resultMessage, appState);
+                                  }
                                 } catch (e) {
                                   showError("$e", appState);
                                 }
