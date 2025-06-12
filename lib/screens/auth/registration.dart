@@ -26,7 +26,8 @@ class _RegistrationScreenState extends State<RegistrationScreen>
     with SingleTickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String? profileImageUrl;
-  File? _profileImage; // Local image file
+  File? _selectedImage;
+  final ImagePickerService _imagePickerService = ImagePickerService();
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
