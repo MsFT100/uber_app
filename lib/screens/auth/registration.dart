@@ -54,6 +54,13 @@ class _RegistrationScreenState extends State<RegistrationScreen>
     super.dispose();
   }
 
+  void _getImage() async {
+    final pickedImage = await _imagePickerService.pickImageFromGallery(context);
+    if (pickedImage != null) {
+      setState(() => _selectedImage = pickedImage);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     UserProvider authProvider =
