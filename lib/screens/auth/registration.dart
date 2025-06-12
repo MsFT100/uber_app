@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../helpers/screen_navigation.dart';
 import '../../providers/app_state.dart';
 import '../../providers/user.dart';
+import '../../services/image_picker.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/dimensions.dart';
 import '../../utils/images.dart';
