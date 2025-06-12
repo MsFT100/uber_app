@@ -131,15 +131,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                             // Profile Picture Upload with Bounce Effect
                             Center(
                               child: GestureDetector(
-                                onTap: () async {
-                                  final pickedFile = await ImagePicker()
-                                      .pickImage(source: ImageSource.gallery);
-                                  if (pickedFile != null) {
-                                    setState(() {
-                                      _profileImage = File(pickedFile.path);
-                                    });
-                                  }
-                                },
+                                onTap: _getImage,
                                 child: AnimatedContainer(
                                   duration: Duration(milliseconds: 400),
                                   curve: Curves.bounceOut,
