@@ -137,16 +137,16 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                                   curve: Curves.bounceOut,
                                   child: CircleAvatar(
                                     radius: 50,
-                                    backgroundImage: _profileImage != null
+                                    backgroundImage: _selectedImage != null
                                         ? FileImage(
-                                            _profileImage!) // Show local image if available
+                                            _selectedImage!) // Show local image if available
                                         : profileImageUrl != null
                                             ? NetworkImage(
                                                 profileImageUrl!) // Show Firebase image if exists
                                             : AssetImage(
                                                     Images.personPlaceholder)
                                                 as ImageProvider,
-                                    child: _profileImage == null &&
+                                    child: _selectedImage == null &&
                                             profileImageUrl == null
                                         ? Icon(Icons.camera_alt,
                                             size: 40, color: Colors.white)
@@ -221,7 +221,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                             // Register Button with Ripple Effect
                             InkWell(
                               onTap: () async {
-                                if (_profileImage == null) {
+                                if (_selectedImage == null) {
                                   showError(
                                       "Profile picture is required!", appState);
                                   return;
