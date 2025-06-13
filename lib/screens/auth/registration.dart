@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
 
 import '../../helpers/screen_navigation.dart';
 import '../../providers/app_state.dart';
 import '../../providers/user.dart';
+import '../../services/image_picker.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/dimensions.dart';
 import '../../utils/images.dart';
@@ -25,7 +25,8 @@ class _RegistrationScreenState extends State<RegistrationScreen>
     with SingleTickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String? profileImageUrl;
-  File? _profileImage; // Local image file
+  File? _selectedImage;
+  final ImagePickerService _imagePickerService = ImagePickerService();
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -51,6 +52,13 @@ class _RegistrationScreenState extends State<RegistrationScreen>
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void _getImage() async {
+    final pickedImage = await _imagePickerService.pickImageFromGallery(context);
+    if (pickedImage != null) {
+      setState(() => _selectedImage = pickedImage);
+    }
   }
 
   @override
@@ -123,30 +131,22 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                             // Profile Picture Upload with Bounce Effect
                             Center(
                               child: GestureDetector(
-                                onTap: () async {
-                                  final pickedFile = await ImagePicker()
-                                      .pickImage(source: ImageSource.gallery);
-                                  if (pickedFile != null) {
-                                    setState(() {
-                                      _profileImage = File(pickedFile.path);
-                                    });
-                                  }
-                                },
+                                onTap: _getImage,
                                 child: AnimatedContainer(
                                   duration: Duration(milliseconds: 400),
                                   curve: Curves.bounceOut,
                                   child: CircleAvatar(
                                     radius: 50,
-                                    backgroundImage: _profileImage != null
+                                    backgroundImage: _selectedImage != null
                                         ? FileImage(
-                                            _profileImage!) // Show local image if available
+                                            _selectedImage!) // Show local image if available
                                         : profileImageUrl != null
                                             ? NetworkImage(
                                                 profileImageUrl!) // Show Firebase image if exists
                                             : AssetImage(
                                                     Images.personPlaceholder)
                                                 as ImageProvider,
-                                    child: _profileImage == null &&
+                                    child: _selectedImage == null &&
                                             profileImageUrl == null
                                         ? Icon(Icons.camera_alt,
                                             size: 40, color: Colors.white)
@@ -221,7 +221,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                             // Register Button with Ripple Effect
                             InkWell(
                               onTap: () async {
-                                if (_profileImage == null) {
+                                if (_selectedImage == null) {
                                   showError(
                                       "Profile picture is required!", appState);
                                   return;
@@ -236,19 +236,25 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                                   return;
                                 }
 
-                                String resultMessage = await authProvider
-                                    .signUp(profileImage: _profileImage!);
-                                if (resultMessage == "Success") {
-                                  changeScreenReplacement(
-                                      context, LoginScreen());
-                                  showError(
+                                try {
+                                  String resultMessage = await authProvider
+                                      .signUp(profileImage: _selectedImage!);
+                                  if (resultMessage == "Success") {
+                                    changeScreenReplacement(
+                                      context,
+                                      LoginScreen(),
+                                    );
+                                    showError(
                                       "Account Creation Successful. Login",
-                                      appState);
-                                } else {
-                                  showError(resultMessage, appState);
+                                      appState,
+                                    );
+                                    authProvider.clearController();
+                                  } else {
+                                    showError(resultMessage, appState);
+                                  }
+                                } catch (e) {
+                                  showError("$e", appState);
                                 }
-                                authProvider.clearController();
-
                                 profileImageUrl = null;
                               },
                               child: Container(
