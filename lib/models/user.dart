@@ -13,7 +13,7 @@ class UserModel {
   static const FREE_RIDES_REMAINING = "freeRidesRemaining";
   static const FREE_RIDE_AMOUNT_REMAINING = "freeRideAmountRemaining";
 
-  
+
   late final String _id;
   late final String _name;
   late final String _email;
@@ -91,6 +91,6 @@ class UserModel {
     _votes = data?[VOTES] ?? 0; // Default to 0
     _trips = data?[TRIPS] ?? 0;
     _rating = (data?[RATING] ?? 0).toDouble(); // Ensure it's double
-    _freeRidesRemaining = data?[FREE_RIDES_REMAINING] ?? 2; // default 2
+    _freeRidesRemaining = data?[FREE_RIDES_REMAINING] ?? 3; // default 2
   }
 }
