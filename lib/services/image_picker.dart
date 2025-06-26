@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -24,13 +25,26 @@ class ImagePickerService {
 
   Future<bool> _requestAppropriatePermissions(BuildContext context) async {
     if (Platform.isAndroid) {
-      if (await Permission.photos.request().isGranted) return true;
+      final sdkInt = (await DeviceInfoPlugin().androidInfo).version.sdkInt;
 
-      // Try fallback for Android 12 and below
-      if (await Permission.storage.request().isGranted) return true;
+      if (sdkInt >= 33) {
+        // Android 13+ (API 33+): Use READ_MEDIA_IMAGES
+        final mediaImagesPermission = await Permission.photos.request();
+        final mediaLibraryPermission = await Permission.mediaLibrary.request();
+        return mediaImagesPermission.isGranted || mediaLibraryPermission.isGranted;
+
+      } else {
+        // Android 6 to 12 (API 23–32): Use READ_EXTERNAL_STORAGE
+        final storagePermission = await Permission.storage.request();
+        final mediaLibraryPermission = await Permission.mediaLibrary.request();
+
+        return storagePermission.isGranted || mediaLibraryPermission.isGranted;
+      }
     } else if (Platform.isIOS) {
-      return await Permission.photos.request().isGranted;
+      final photosPermission = await Permission.photosAddOnly.request();
+      return photosPermission.isGranted;
     }
+
     return false;
   }
 
