@@ -42,7 +42,8 @@ class ImagePickerService {
         body: AlertDialog(
           title: const Text("Permission Denied"),
           content: const Text(
-              "Image access permission was denied. Please enable it from settings."),
+            "Image access permission was denied. Please enable it from settings.",
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
