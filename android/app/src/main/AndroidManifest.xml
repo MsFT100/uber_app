@@ -11,7 +11,7 @@
 
     <!-- Permission to access location for Android 11 and below -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"
-    android:maxSdkVersion="32" />
+    android:maxSdkVersion="36" />
 
     <!-- Required for Android 12 and below -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
