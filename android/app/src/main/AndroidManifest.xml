@@ -15,8 +15,6 @@
 
     <!-- Required for Android 12 and below -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
 
     <!-- Required for Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
