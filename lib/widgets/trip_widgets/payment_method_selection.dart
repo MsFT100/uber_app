@@ -319,8 +319,11 @@ class _PaymentMethodSelectionWidgetState
                     ),
                     const SizedBox(height: 10),
                     // show text "Free" if the user has free rides left  and fare is below Kshs.600/=
+                    // and the freeRideAmountRemaining is less than or equal to the ridePrice
                     _freeRideController.hasFreeRideAvailable(user!) &&
-                            appState.ridePrice <= 600
+                            appState.ridePrice <= 600 && (
+                            user.freeRideAmountRemaining <= appState.ridePrice || user.freeRideAmountRemaining != 0
+                            )
                         ? Container(
                             decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(4.0),
