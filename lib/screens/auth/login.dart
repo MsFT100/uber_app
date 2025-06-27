@@ -2,7 +2,6 @@ import 'package:BucoRide/helpers/constants.dart';
 import 'package:BucoRide/providers/app_state.dart';
 import 'package:BucoRide/screens/auth/forgot_password.dart';
 import 'package:BucoRide/screens/auth/phone_login.dart';
-import 'package:BucoRide/screens/auth/registration.dart';
 import 'package:BucoRide/screens/storage_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
