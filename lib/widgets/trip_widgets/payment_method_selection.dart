@@ -442,9 +442,14 @@ class _PaymentMethodSelectionWidgetState
                                     final newRides = user.freeRidesRemaining > 0
                                         ? user.freeRidesRemaining - 1
                                         : 0;
+                                    final rideBalance = user.freeRideAmountRemaining -
+                                        appState.ridePrice;
                                     // update user data
-                                    await UserServices().updateUserData(
-                                        user..freeRidesRemaining = newRides);
+                                    user.freeRidesRemaining = newRides;
+
+                                    // if user has free ride, deduct the current ridePrice from the freeRideAmountRemaining
+                                    user.freeRideAmountRemaining = rideBalance;
+                                    await UserServices().updateUserData(user);
                                     await RideRequestServices().updateRequest({
                                       "id": user.id,
                                       "isFree": true, // set free ride to true
@@ -452,6 +457,8 @@ class _PaymentMethodSelectionWidgetState
 
                                     // Update in provider
                                     userProvider.updateFreeRides(newRides);
+                                    userProvider
+                                        .updateFreeRideFare(rideBalance);
 
                                     // show a snackbar
                                     appState.showCustomSnackBar(
@@ -490,8 +497,9 @@ class _PaymentMethodSelectionWidgetState
                                 // if user has free rides and cancelled request restore ride
                                 if (appState.ridePrice <= 600.0) {
                                   // check if the user has free remaining rides
-                                  if (_freeRideController.hasFreeRideAvailable(user)) {
-                                    /* 
+                                  if (_freeRideController
+                                      .hasFreeRideAvailable(user)) {
+                                    /*
                                     check if remaining rides is greater than zero and less than
                                     or equal to 2 and restore unused ride. For example, if a user
                                     has 2 free rides and they request a ride whose fare is less than Kshs. 600/=,
@@ -502,12 +510,23 @@ class _PaymentMethodSelectionWidgetState
                                                 user.freeRidesRemaining <= 2
                                             ? user.freeRidesRemaining + 1
                                             : 0;
+                                    final rideBalance =
+                                        user.freeRidesRemaining > 0 &&
+                                                user.freeRidesRemaining <= 2
+                                            ? user.freeRideAmountRemaining + appState.ridePrice
+                                            : 0;
+
+                                    // restore free rides and free ride price
+                                    user.freeRidesRemaining = newRides;
+                                    user.freeRideAmountRemaining = rideBalance.toDouble();
+
                                     // update user data
-                                    await UserServices().updateUserData(
-                                        user..freeRidesRemaining = newRides);
+                                    await UserServices().updateUserData(user);
 
                                     // Update in provider
                                     userProvider.updateFreeRides(newRides);
+                                    userProvider
+                                        .updateFreeRideFare(rideBalance.toDouble());
                                     return;
                                   }
                                 }
