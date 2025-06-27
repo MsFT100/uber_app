@@ -445,8 +445,9 @@ class _PaymentMethodSelectionWidgetState
                                     final newRides = user.freeRidesRemaining > 0
                                         ? user.freeRidesRemaining - 1
                                         : 0;
-                                    final rideBalance = user.freeRideAmountRemaining -
-                                        appState.ridePrice;
+                                    final rideBalance =
+                                        user.freeRideAmountRemaining -
+                                            appState.ridePrice;
                                     // update user data
                                     user.freeRidesRemaining = newRides;
 
@@ -516,20 +517,22 @@ class _PaymentMethodSelectionWidgetState
                                     final rideBalance =
                                         user.freeRidesRemaining > 0 &&
                                                 user.freeRidesRemaining <= 2
-                                            ? user.freeRideAmountRemaining + appState.ridePrice
+                                            ? user.freeRideAmountRemaining +
+                                                appState.ridePrice
                                             : 0;
 
                                     // restore free rides and free ride price
                                     user.freeRidesRemaining = newRides;
-                                    user.freeRideAmountRemaining = rideBalance.toDouble();
+                                    user.freeRideAmountRemaining =
+                                        rideBalance.toDouble();
 
                                     // update user data
                                     await UserServices().updateUserData(user);
 
                                     // Update in provider
                                     userProvider.updateFreeRides(newRides);
-                                    userProvider
-                                        .updateFreeRideFare(rideBalance.toDouble());
+                                    userProvider.updateFreeRideFare(
+                                        rideBalance.toDouble());
                                     return;
                                   }
                                 }
