@@ -31,6 +31,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   bool alreadyclicked = false;
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +47,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
     _controller.forward();
+    _getImage();
   }
 
   @override

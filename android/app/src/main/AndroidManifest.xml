@@ -11,12 +11,10 @@
 
     <!-- Permission to access location for Android 11 and below -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"
-    android:maxSdkVersion="32" />
+    android:maxSdkVersion="36" />
 
     <!-- Required for Android 12 and below -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
 
     <!-- Required for Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -26,6 +24,18 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
+
+        <!-- Add file provider to prevent the app from crashing when selecting an image -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="high_importance_channel" />

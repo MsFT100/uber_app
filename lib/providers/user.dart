@@ -510,4 +510,12 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // update the balance of free rides
+  void updateFreeRideFare(double fare) {
+    if (_userModel != null) {
+      _userModel!.freeRideAmountRemaining = fare;
+      notifyListeners();
+    }
+  }
 }
