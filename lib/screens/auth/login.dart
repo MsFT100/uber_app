@@ -2,9 +2,10 @@ import 'package:BucoRide/helpers/constants.dart';
 import 'package:BucoRide/providers/app_state.dart';
 import 'package:BucoRide/screens/auth/forgot_password.dart';
 import 'package:BucoRide/screens/auth/phone_login.dart';
-import 'package:BucoRide/screens/auth/registration.dart';
+import 'package:BucoRide/screens/storage_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../../helpers/screen_navigation.dart';
@@ -310,7 +311,30 @@ class _LoginScreenState extends State<LoginScreen>
       children: [
         Text('${'Create an account'.tr} '),
         TextButton(
-          onPressed: () => changeScreen(context, RegistrationScreen()),
+          onPressed: () async {
+            final storageStatus = await Permission.storage.status;
+            final photosStatus = await Permission.photos.status;
+
+            if (!storageStatus.isGranted ||
+                !photosStatus.isGranted) {
+              final storageRequest = await Permission.storage.request();
+              final photosRequest = await Permission.photos.request();
+
+              if (storageRequest.isGranted || photosRequest.isGranted) {
+                changeScreen(context, StoragePermissionGate());
+              } else {
+                // Handle permission denial
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Permission denied. Please grant permission to your storage/gallery to continue."),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            } else {
+              changeScreen(context, StoragePermissionGate());
+            }
+          },
           child: Text(
             'Register here',
             style: TextStyle(

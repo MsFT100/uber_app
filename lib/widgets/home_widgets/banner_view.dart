@@ -1,5 +1,4 @@
-import 'package:BucoRide/helpers/screen_navigation.dart';
-import 'package:BucoRide/screens/home.dart';
+import 'package:BucoRide/utils/images.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 
@@ -14,9 +13,9 @@ class _BannerViewState extends State<BannerView> {
   int activeIndex = 0;
 
   final List<String> bannerImages = [
-  'https://firebasestorage.googleapis.com/v0/b/buricode-6e54c.firebasestorage.app/o/Banners%2F1.png?alt=media&token=5326135a-908e-4dd0-8b22-78e2a895e0a8',
-  'https://firebasestorage.googleapis.com/v0/b/buricode-6e54c.firebasestorage.app/o/Banners%2F2.png?alt=media&token=e781fc06-64d6-48a0-ad60-bd52ccb68270',
-  
+  'https://firebasestorage.googleapis.com/v0/b/buricode-6e54c.firebasestorage.app/o/Banners%2FTaxi%20Business%20Card%20in%20Black%20Yellow%20Illustrative%20_style.png?alt=media&token=0d854dd3-4924-4ae5-aef2-44a3871e6fae',
+  'https://firebasestorage.googleapis.com/v0/b/buricode-6e54c.firebasestorage.app/o/Banners%2FTaxi%20Business%20Card%20in%20Black%20Yellow%20Illustrative%20_style.png?alt=media&token=0d854dd3-4924-4ae5-aef2-44a3871e6fae',
+
 ];
 
 
@@ -66,7 +65,7 @@ class _BannerViewState extends State<BannerView> {
                         );
                       },
                       errorBuilder: (context, error, stackTrace) {
-                        return Image.asset('assets/image/placeholder.png', fit: BoxFit.cover);
+                        return Image.asset(Images.placeholder, fit: BoxFit.cover);
                       },
                     ),
                   ),
