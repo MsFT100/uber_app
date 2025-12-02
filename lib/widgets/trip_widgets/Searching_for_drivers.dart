@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/trip.dart';
 import '../../providers/app_state.dart';
-import '../../providers/location_provider.dart';
-import '../../providers/user.dart';
+import '../../providers/user_provider.dart';
 import '../../utils/dimensions.dart';
 
 class SearchingForDrivers extends StatefulWidget {
@@ -23,7 +23,6 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
   void initState() {
     super.initState();
 
-    // Animation setup
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
@@ -41,23 +40,13 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
 
   @override
   Widget build(BuildContext context) {
-    final AppStateProvider appState =
-        Provider.of<AppStateProvider>(context, listen: true);
-    final locationProvider =
-        Provider.of<LocationProvider>(context, listen: true);
-    final UserProvider userProvider = Provider.of<UserProvider>(context);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (appState.driverFound) {
-        locationProvider.show =
-            Show.DRIVER_FOUND; // Update after build finishes
-      }
-    });
+    final appState = Provider.of<AppStateProvider>(context);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.3, // Starts at 30% of the screen
-      minChildSize: 0.3, // Minimum height when collapsed
-      maxChildSize: 0.6, // Maximum height when expanded
+      initialChildSize: 0.3,
+      minChildSize: 0.3,
+      maxChildSize: 0.6,
       builder: (context, scrollController) {
         return Container(
           padding: const EdgeInsets.all(16),
@@ -69,12 +58,10 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
             ],
           ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment
-                .spaceBetween, // Ensures cancel button stays at bottom
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 children: [
-                  // Drag handle
                   Container(
                     width: 50,
                     height: 5,
@@ -83,14 +70,11 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
-                  // Show different UI based on search status
-                  appState.lookingForDriver
+                  appState.currentTrip?.status == TripStatus.requested ||
+                          appState.currentTrip?.status == TripStatus.pending
                       ? Column(
                           children: [
-                            // Animated searching text
                             AnimatedBuilder(
                               animation: _animation,
                               builder: (context, child) {
@@ -105,12 +89,10 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                                 );
                               },
                             ),
-
                             const SizedBox(
                                 height: Dimensions.paddingSizeExtraLarge),
                             const Center(
-                              child: // Searching animation (Loading Indicator)
-                                  const SpinKitFoldingCube(
+                              child: SpinKitFoldingCube(
                                 color: Colors.black,
                                 size: Dimensions.iconSizeExtraLarge,
                               ),
@@ -127,60 +109,18 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                               textAlign: TextAlign.center,
                               style: TextStyle(fontSize: 18),
                             ),
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  appState.requestDriver(
-                                    vehicleType: appState.vehicleType,
-                                    distance: locationProvider
-                                        .routeModel!.distance
-                                        .toJson(),
-                                    user: userProvider.userModel!,
-                                    lat: locationProvider
-                                        .pickupCoordinates.latitude,
-                                    lng: locationProvider
-                                        .pickupCoordinates.longitude,
-                                    context: context,
-                                    address:
-                                        locationProvider.requestedDestination,
-                                    destinationCoordinates:
-                                        locationProvider.destinationCoordinates,
-                                  ); // Restart search
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10)),
-                                ),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.refresh,
-                                        color: Colors.white),
-                                    const SizedBox(
-                                      width: 6,
-                                    ),
-                                    const Text("Try Again"),
-                                  ],
-                                ),
-                              ),
-                            ),
                           ],
                         )
                 ],
               ),
-
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    appState.cancelRequest();
-                    locationProvider.cancelRequest();
+                    final accessToken = userProvider.accessToken;
+                    if (accessToken != null) {
+                      appState.cancelTrip(accessToken);
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
@@ -193,7 +133,6 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                   child: const Text("Cancel Search"),
                 ),
               ),
-              // Ensure the cancel button is always at the bottom
             ],
           ),
         );

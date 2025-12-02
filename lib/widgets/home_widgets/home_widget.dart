@@ -1,13 +1,10 @@
-import 'package:BucoRide/controllers/free_ride_controller.dart';
 import 'package:BucoRide/helpers/screen_navigation.dart';
-import 'package:BucoRide/providers/app_state.dart';
 import 'package:BucoRide/providers/location_provider.dart';
+import 'package:BucoRide/providers/user_provider.dart';
 import 'package:BucoRide/utils/app_constants.dart';
 import 'package:BucoRide/utils/images.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../../providers/user.dart';
 import '../../screens/dashboard/Address/address_btn.dart';
 import '../../screens/home.dart';
 import '../../screens/parcels/parcel_page.dart';
@@ -15,7 +12,6 @@ import '../../utils/dimensions.dart';
 import '../driver_map.dart';
 import '../loading_widgets/loading_location.dart';
 import 'banner_view.dart';
-import 'free_ride_offer_banner.dart';
 import 'home_search_screen.dart';
 
 class MenuWidgetScreen extends StatefulWidget {
@@ -31,8 +27,6 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<LocationProvider>(context, listen: false).fetchLocation();
-      Provider.of<LocationProvider>(context, listen: false).listenToDrivers();
-      Provider.of<AppStateProvider>(context, listen: false).saveDeviceToken();
     });
   }
 
@@ -48,15 +42,14 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
         Provider.of<LocationProvider>(context, listen: true);
     final position = locationProvider.currentPosition;
     final address = locationProvider.locationAddress;
-    final FreeRideController _freeRideController = FreeRideController();
 
     if (position == null) {
       locationProvider.fetchLocation();
       return LoadingLocationScreen();
     }
-    return Scaffold(
-      backgroundColor: Colors.grey[200],
-      body: RefreshIndicator(
+    return Container(
+      color: Colors.grey[200],
+      child: RefreshIndicator(
         onRefresh: _refreshHome,
         child: Column(
           children: [
@@ -72,8 +65,7 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
 
                   // banner that shows a user has free rides
                   // show banner only if the user has free rides
-                  if (_freeRideController.hasFreeRideAvailable(userProvider.userModel!))
-                    FreeRideOfferBanner(userProvider: userProvider),
+
                   const SizedBox(height: Dimensions.paddingSize),
                   _buildButtons(locationProvider),
                   const SizedBox(height: Dimensions.paddingSize),
@@ -106,7 +98,7 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${greetingMessage()}, ${userProvider.userModel?.name ?? "Guest"}',
+            '${greetingMessage()}, ${userProvider.rider?.name ?? "Guest"}',
             style: TextStyle(
                 fontSize: Dimensions.fontSizeLarge,
                 color: Colors.black45,

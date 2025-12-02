@@ -185,7 +185,7 @@ class _TripDetailsState extends State<TripDetails> {
   @override
   Widget build(BuildContext context) {
     final locationProvider = Provider.of<LocationProvider>(context);
-    final _mapController = locationProvider.mapController;
+
     final position = locationProvider.currentPosition;
     final Set<Polyline> _polylines = locationProvider.polylines;
 

@@ -25,6 +25,7 @@ dependencies:
   flutter_animate: ^4.5.2
   firebase_app_check: ^0.3.2+4
   font_awesome_flutter: ^10.8.0
+  http: ^1.2.1
 
   geolocator: ^13.0.2
   geoflutterfire_plus: ^0.0.32
@@ -32,7 +33,6 @@ dependencies:
   googlemaps_flutter_webservices: ^1.0.2
 
   geocoding: ^4.0.0
-  get: ^4.6.6
 
 
   modal_bottom_sheet: ^3.0.0

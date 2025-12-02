@@ -1,18 +1,18 @@
 import 'package:BucoRide/providers/location_provider.dart';
+
 import 'package:BucoRide/widgets/trip_widgets/Searching_for_drivers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 
 import '../helpers/constants.dart';
 import '../helpers/style.dart';
-import '../providers/user.dart';
-import '../widgets/trip_draggable.dart';
 import '../widgets/trip_widgets/destination_selection.dart';
 import '../widgets/trip_widgets/driver_found.dart';
 import '../widgets/trip_widgets/payment_method_selection.dart';
 import '../widgets/trip_widgets/pickup_selection_widget.dart';
+import '../widgets/trip_draggable.dart';
 import 'map.dart';
 
 class HomePage extends StatefulWidget {
@@ -29,18 +29,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _deviceToken();
     _restoreSystemUI();
   }
 
-  _deviceToken() async {
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    UserProvider _user = Provider.of<UserProvider>(context, listen: false);
 
-    if (_user.userModel?.token != preferences.getString('token')) {
-      Provider.of<UserProvider>(context, listen: false).saveDeviceToken();
-    }
-  }
 
   void _restoreSystemUI() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
@@ -90,7 +82,7 @@ class _HomePageState extends State<HomePage> {
                                   text: TextSpan(children: [
                                 TextSpan(
                                     text:
-                                        "You\'ll reach your destination in \n",
+                                        "You'll reach your destination in \n",
                                     style:
                                         TextStyle(fontWeight: FontWeight.w300)),
                                 TextSpan(
@@ -128,7 +120,7 @@ class _HomePageState extends State<HomePage> {
               child: DriverFoundWidget()),
           //  ANCHOR Draggable DRIVER
           Visibility(
-              visible: locationProvider.show == Show.TRIP, child: TripWidget()),
+              visible: locationProvider.show == Show.TRIP, child: TripDraggable()),
           Visibility(
               visible: locationProvider.show == Show.SEARCHING_DRIVER,
               child: SearchingForDrivers()),

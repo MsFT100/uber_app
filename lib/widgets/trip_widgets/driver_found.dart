@@ -1,13 +1,13 @@
-import 'package:BucoRide/helpers/constants.dart';
 import 'package:BucoRide/providers/location_provider.dart';
 import 'package:BucoRide/utils/dimensions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../locators/service_locator.dart';
+import '../../models/trip.dart';
 import '../../providers/app_state.dart';
+import '../../providers/user_provider.dart';
 import '../../services/call_sms.dart';
-import '../custom_text.dart';
 
 class DriverFoundWidget extends StatefulWidget {
   const DriverFoundWidget({Key? key}) : super(key: key);
@@ -20,38 +20,10 @@ class _DriverFoundWidgetState extends State<DriverFoundWidget> {
   final CallsAndMessagesService _service = locator<CallsAndMessagesService>();
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final appState = Provider.of<AppStateProvider>(context, listen: false);
-      if (appState.driverModel == null && appState.rideRequestModel != null) {
-        appState.fetchDriver("${appState.rideRequestModel!.driverId}");
-      }
-      final locationProvider =
-          Provider.of<LocationProvider>(context, listen: false);
-      locationProvider.fetchLocation();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    AppStateProvider appState =
-        Provider.of<AppStateProvider>(context, listen: true);
-    final locationProvider =
-        Provider.of<LocationProvider>(context, listen: true);
-
-    print("SHOWING D++++++++ ${appState.driverArrived}");
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (appState.driverArrived) {
-        locationProvider.show = Show.TRIP; // Update after build finishes
-      }
-    });
-    // if (appState.driverArrived) {
-    //   setState(() {
-    //     locationProvider.show = Show.TRIP;
-    //   });
-    // }
+    final appState = Provider.of<AppStateProvider>(context);
+    final locationProvider = Provider.of<LocationProvider>(context);
+    final userProvider = Provider.of<UserProvider>(context);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.25,
@@ -59,14 +31,14 @@ class _DriverFoundWidgetState extends State<DriverFoundWidget> {
       maxChildSize: 0.5,
       builder: (BuildContext context, myscrollController) {
         return Container(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(border_radius),
-              topRight: Radius.circular(border_radius),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20.0),
+              topRight: Radius.circular(20.0),
             ),
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
                 color: Colors.black26,
                 blurRadius: 10,
@@ -78,23 +50,25 @@ class _DriverFoundWidgetState extends State<DriverFoundWidget> {
             controller: myscrollController,
             children: [
               Center(
-                child: CustomText(
-                  text: appState.driverArrived
+                child: Text(
+                  appState.currentTrip?.status == TripStatus.arrived_at_pickup
                       ? 'Your ride has arrived'
                       : 'Your ride arrives in ${locationProvider.routeModel?.timeNeeded.text ?? '...'}',
-                  size: 14,
-                  weight: FontWeight.bold,
-                  color: appState.driverArrived ? Colors.green : Colors.grey,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: appState.currentTrip?.status == TripStatus.arrived_at_pickup ? Colors.green : Colors.grey,
+                  ),
                 ),
               ),
-              Divider(thickness: 1.5),
+              const Divider(thickness: 1.5),
               _buildDriverInfo(appState),
-              Divider(thickness: 1.5),
+              const Divider(thickness: 1.5),
               _buildRideDetails(appState),
-              Divider(thickness: 1.5),
+              const Divider(thickness: 1.5),
               _buildRidePrice(appState),
-              SizedBox(height: 12),
-              _buildCancelButton(appState, locationProvider),
+              const SizedBox(height: 12),
+              _buildCancelButton(appState, locationProvider, userProvider),
             ],
           ),
         );
@@ -106,51 +80,40 @@ class _DriverFoundWidgetState extends State<DriverFoundWidget> {
     return ListTile(
       leading: CircleAvatar(
         radius: 35,
-        backgroundImage: appState.driverModel?.photo != null
-            ? NetworkImage(appState.driverModel!.photo)
-            : null,
-        child: appState.driverModel?.photo == null
-            ? Icon(Icons.person_outline, size: 30, color: Colors.white)
+        backgroundImage: null,
+        child: appState.driver?.profilePhotoUrl == null
+            ? const Icon(Icons.person_outline, size: 30, color: Colors.white)
             : null,
       ),
       title: Text(
-        appState.driverModel?.name ?? 'Loading...',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        appState.driver?.name ?? 'Loading...',
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         textAlign: TextAlign.center,
       ),
       subtitle: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            appState.driverModel?.model ?? '',
+            appState.driver?.carModel ?? '',
             textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: Dimensions.fontSizeSmall, color: Colors.grey),
           ),
-          SizedBox(
+          const SizedBox(
             width: Dimensions.paddingSize,
           ),
           Text(
-            appState.driverModel?.licensePlate ?? '',
+            appState.driver?.licensePlate ?? '',
             textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: Dimensions.fontSizeDefault, color: Colors.black),
           ),
-          // SizedBox(
-          //   width: Dimensions.paddingSize,
-          // ),
-          // Text(
-          //   appState.driverModel?.phone ?? '',
-          //   textAlign: TextAlign.center,
-          //   style: TextStyle(
-          //       fontSize: Dimensions.fontSizeDefault, color: Colors.black),
-          // ),
         ],
       ),
       trailing: IconButton(
-        icon: Icon(Icons.call, color: Colors.green, size: 30),
+        icon: const Icon(Icons.call, color: Colors.green, size: 30),
         onPressed: () {
-            _service.call(appState.driverModel!.phone);
+            _service.call(appState.driver!.name);
         },
       ),
     );
@@ -159,26 +122,27 @@ class _DriverFoundWidgetState extends State<DriverFoundWidget> {
   Widget _buildRideDetails(AppStateProvider appState) {
     final locationProvider = Provider.of<LocationProvider>(context);
 
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CustomText(text: "Ride details", size: 16, weight: FontWeight.bold),
-        SizedBox(height: 10),
+        const Text("Ride details", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
         Row(
           children: [
-            Icon(Icons.location_on, color: Colors.redAccent),
-            SizedBox(width: 10),
+            const Icon(Icons.location_on, color: Colors.redAccent),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Pickup Location",
+                  const Text("Pickup Location",
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   Text(locationProvider.locationAddress ?? 'Loading...'),
-                  SizedBox(height: 8),
-                  Text("Destination",
+                  const SizedBox(height: 8),
+                  const Text("Destination",
                       style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(locationProvider.requestedDestination),
+                  Text(appState.currentTrip!.destinationAddress),
                 ],
               ),
             ),
@@ -192,10 +156,10 @@ class _DriverFoundWidgetState extends State<DriverFoundWidget> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        CustomText(text: "Ride Price", size: 16, weight: FontWeight.bold),
+        const Text("Ride Price", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         Text(
-          "\Ksh ${appState.ridePrice.toStringAsFixed(0)}",
-          style: TextStyle(
+          "\Ksh ${appState.currentTrip?.price}",
+          style: const TextStyle(
               fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
         ),
       ],
@@ -203,21 +167,22 @@ class _DriverFoundWidgetState extends State<DriverFoundWidget> {
   }
 
   Widget _buildCancelButton(
-      AppStateProvider provider, LocationProvider locationProvider) {
+      AppStateProvider provider, LocationProvider locationProvider, UserProvider userProvider) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.red,
-          padding: EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         onPressed: () {
-          provider.cancelRequestListener();
-          provider.cancelRequest();
-          locationProvider.cancelRequest();
+          final accessToken = userProvider.accessToken;
+          if (accessToken != null) {
+            provider.cancelTrip(accessToken);
+          }
         },
-        child: Text("Cancel Ride",
+        child: const Text("Cancel Ride",
             style: TextStyle(color: Colors.white, fontSize: 16)),
       ),
     );

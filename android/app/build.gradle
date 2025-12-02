@@ -11,8 +11,6 @@ plugins {
 android {
     namespace 'com.buricode.msft'
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "29.0.13113456"
-
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -27,7 +25,7 @@ android {
 
     defaultConfig {
         applicationId 'com.buricode.msft'
-        minSdk = 23
+        minSdkVersion = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode.toInteger()
         versionName flutter.versionName
@@ -35,7 +33,7 @@ android {
 
     signingConfigs {
         release {
-            storeFile file("D:/AndroidStudioProjects/uber_app/my-release-key.keystore")
+            storeFile file("my-release-key.keystore")
             storePassword "gamerich2025"
             keyAlias "my-key-alias"
             keyPassword "gamerich2025"

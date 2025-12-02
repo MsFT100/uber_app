@@ -95,7 +95,6 @@ class _DestinationSelectionWidgetState
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: _buildSearchBox(locationProvider),
               ),
-              _buildRecentLocations(locationProvider),
               Expanded(
                 child: _isSearching
                     ? Center(child: Loading())
@@ -156,40 +155,6 @@ class _DestinationSelectionWidgetState
     );
   }
 
-  Widget _buildRecentLocations(LocationProvider provider) {
-    if (provider.recentDestinations.isEmpty) return SizedBox(); // Hide if empty
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Recent Locations",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            children: provider.recentDestinations.map((location) {
-              return GestureDetector(
-                onTap: () {
-                  provider.setDestination(
-                      coordinates: LatLng(location.lat, location.lng));
-                },
-                child: Chip(
-                  avatar: const Icon(Icons.history, color: Colors.blue),
-                  label: Text(location.name),
-                  backgroundColor: Colors.grey.shade200,
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
   List<Widget> _buildLocationList(LocationProvider provider) {
     return predictions.map((prediction) {
       return ListTile(
@@ -202,15 +167,7 @@ class _DestinationSelectionWidgetState
           final double lat = details.result.geometry?.location.lat ?? 0.0;
           final double lng = details.result.geometry?.location.lng ?? 0.0;
 
-          provider.changeRequestedDestination(
-            reqDestination: prediction.description ?? '',
-            lat: lat,
-            lng: lng,
-          );
-
-          provider.updateDestination(destination: prediction.description ?? '');
           provider.setDestination(coordinates: LatLng(lat, lng));
-          provider.changeWidgetShowed(showWidget: Show.PICKUP_SELECTION);
 
           if (mounted) {
             // Ensure widget is still mounted before calling setState()

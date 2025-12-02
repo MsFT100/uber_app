@@ -1,4 +1,5 @@
 import 'package:BucoRide/helpers/screen_navigation.dart';
+import 'package:BucoRide/providers/user_provider.dart';
 import 'package:BucoRide/screens/auth/login.dart';
 import 'package:BucoRide/screens/profile/personal-info.dart';
 import 'package:BucoRide/screens/profile/privacy_policy.dart';
@@ -7,7 +8,6 @@ import 'package:BucoRide/utils/app_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/user.dart';
 import '../utils/dimensions.dart';
 import '../utils/images.dart';
 import 'profile/edit_page.dart';
@@ -23,7 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    Provider.of<UserProvider>(context, listen: false).refreshUser();
+
   }
 
   @override
@@ -31,7 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     UserProvider userProvider = Provider.of<UserProvider>(context);
 
     var profileImage = userProvider.user?.photoURL ?? Images.person;
-    var displayName = userProvider.userModel?.name ?? "John Doe";
+    var displayName = userProvider.rider?.name ?? "John Doe";
 
     return Scaffold(
       backgroundColor: Colors.grey[200],
@@ -40,13 +40,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             _buildHeader(profileImage, displayName),
             const SizedBox(height: 20),
-            _buildStatsSection(),
-            const SizedBox(height: 20),
             _buildAccountSettings(userProvider),
           ],
         ),
       ),
     );
+  }
+
+  ImageProvider _getProfileImage(String? profileImage) {
+    if (profileImage != null && profileImage.startsWith('http')) {
+      return NetworkImage(profileImage);
+    } else {
+      return const AssetImage(Images.person);
+    }
   }
 
   Widget _buildHeader(String profileImage, String displayName) {
@@ -76,7 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 backgroundColor: Colors.white,
                 child: CircleAvatar(
                   radius: 48,
-                  backgroundImage: NetworkImage(profileImage),
+                  backgroundImage: _getProfileImage(profileImage),
                 ),
               ),
             ),
@@ -90,47 +96,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatsSection() {
-    UserProvider userProvider = Provider.of<UserProvider>(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSize),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSize),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem("Trips", "${userProvider.userModel!.trips}"),
-              _buildStatItem("Rating", "${userProvider.userModel!.rating} ⭐"),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String title, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.blueAccent,
-          ),
-        ),
-        const SizedBox(height: 5),
-        Text(
-          title,
-          style: TextStyle(color: Colors.grey[600]),
         ),
       ],
     );

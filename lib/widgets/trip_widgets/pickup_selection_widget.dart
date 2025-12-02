@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import '../../helpers/constants.dart';
 import '../../helpers/style.dart';
 import '../../utils/dimensions.dart';
-import '../custom_text.dart';
 
 class PickupSelectionWidget extends StatefulWidget {
   final GlobalKey<ScaffoldState> scaffoldState;
@@ -85,10 +84,12 @@ class _PickupSelectionWidgetState extends State<PickupSelectionWidget> {
           child: Column(
             children: [
               const SizedBox(height: 12),
-              CustomText(
-                text: "Move the pin to adjust pickup location",
-                size: Dimensions.fontSizeSmall,
-                weight: FontWeight.w400,
+              Text(
+                "Move the pin to adjust pickup location",
+                style: TextStyle(
+                  fontSize: Dimensions.fontSizeSmall,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
               const Divider(),
               Padding(
@@ -143,17 +144,7 @@ class _PickupSelectionWidgetState extends State<PickupSelectionWidget> {
                               detail.result.geometry?.location.lng ?? 0.0;
 
                           // Update app state
-                          locationProvider.changeRequestedDestination(
-                            reqDestination: prediction.description ?? '',
-                            lat: lat,
-                            lng: lng,
-                          );
-                          locationProvider.updateDestination(
-                              destination: prediction.description ?? '');
-                          locationProvider.setPickCoordinates(
-                              coordinates: LatLng(lat, lng));
-                          locationProvider.changePickupLocationAddress(
-                              address: prediction.description ?? '');
+                          locationProvider.pickupCoordinates = LatLng(lat, lng);
 
                           // Clear predictions after selection
                           setState(() {
@@ -178,13 +169,7 @@ class _PickupSelectionWidgetState extends State<PickupSelectionWidget> {
                               _isLoading = true; // Show loading
                             });
 
-                            await locationProvider.addRiderRoutePolyline(
-                                locationProvider.pickupCoordinates,
-                                locationProvider.destinationCoordinates);
-
-                            locationProvider.changeWidgetShowed(
-                              showWidget: Show.PAYMENT_METHOD_SELECTION,
-                            );
+                            locationProvider.show = Show.PAYMENT_METHOD_SELECTION;
 
                             setState(() {
                               _isLoading = false; // Hide loading

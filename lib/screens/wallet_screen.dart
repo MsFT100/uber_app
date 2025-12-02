@@ -1,9 +1,8 @@
-import 'package:BucoRide/models/user.dart';
+import 'package:BucoRide/models/rider.dart';
+import 'package:BucoRide/providers/user_provider.dart';
 import 'package:BucoRide/widgets/app_bar/app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/user.dart';
-import '../services/user.dart';
 
 class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
@@ -11,7 +10,7 @@ class WalletScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
-    final user = userProvider.userModel;
+    final user = userProvider.rider;
 
     if (user == null) {
       return ListView(
@@ -31,11 +30,10 @@ class WalletScreen extends StatelessWidget {
     );
   }
 
-  Widget WalletScreenBody(UserModel user, UserProvider userProvider) {
+  Widget WalletScreenBody(Rider rider, UserProvider userProvider) {
     return RefreshIndicator.adaptive(
       onRefresh: () async {
-        final refreshedUser = await UserServices().getUserById(user.id);
-        userProvider.setUser(refreshedUser);
+        await userProvider.updateUserData(rider);
       },
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -47,7 +45,7 @@ class WalletScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 16.0),
               ),
               trailing: Text(
-                user.freeRidesRemaining.toString(),
+                rider.name,
                 style: TextStyle(fontSize: 16.0),
               ),
             ),
