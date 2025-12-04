@@ -25,7 +25,7 @@ android {
 
     defaultConfig {
         applicationId 'com.buricode.msft'
-        minSdkVersion = flutter.minSdkVersion
+        minSdkVersion = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode.toInteger()
         versionName flutter.versionName

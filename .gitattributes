@@ -1,0 +1,18 @@
+
+# Set the default behavior to handle line endings automatically.
+# This will convert CRLF to LF on commit.
+* text=auto
+
+# Explicitly declare files that should always have LF line endings on any OS.
+# This is crucial for shell scripts and other script-like files.
+*.sh    eol=lf
+*.py    eol=lf
+*.rb    eol=lf
+*.js    eol=lf
+*.xml   eol=lf
+*.yaml  eol=lf
+*.yml   eol=lf
+
+# This is the most important line for your specific issue.
+# It ensures the Gradle wrapper script always has Unix-style endings.
+gradlew eol=lf

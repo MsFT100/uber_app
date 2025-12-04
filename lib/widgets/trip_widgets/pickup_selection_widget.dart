@@ -169,7 +169,7 @@ class _PickupSelectionWidgetState extends State<PickupSelectionWidget> {
                               _isLoading = true; // Show loading
                             });
 
-                            locationProvider.show = Show.PAYMENT_METHOD_SELECTION;
+
 
                             setState(() {
                               _isLoading = false; // Hide loading

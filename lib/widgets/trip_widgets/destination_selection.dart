@@ -1,9 +1,6 @@
-import 'package:BucoRide/helpers/constants.dart';
 import 'package:BucoRide/providers/location_provider.dart';
 import 'package:BucoRide/widgets/scroll_sheet_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:googlemaps_flutter_webservices/places.dart' as th;
 import 'package:provider/provider.dart';
 
 import '../../utils/dimensions.dart';
@@ -17,50 +14,25 @@ class DestinationSelectionWidget extends StatefulWidget {
       _DestinationSelectionWidgetState();
 }
 
-class _DestinationSelectionWidgetState
-    extends State<DestinationSelectionWidget> {
-  List<th.Prediction> predictions = [];
+class _DestinationSelectionWidgetState extends State<DestinationSelectionWidget> {
   final DraggableScrollableController _draggableController =
       DraggableScrollableController();
-  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
-  }
-
-  Future<void> searchPlaces(String input) async {
-    if (input.isEmpty) {
-      setState(() {
-        predictions = [];
-        _isSearching = false;
+    // Add a listener to expand the sheet when search results appear
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final locationProvider = context.read<LocationProvider>();
+      locationProvider.addListener(() {
+        if (locationProvider.predictions.isNotEmpty &&
+            _draggableController.isAttached) {
+          _draggableController.animateTo(0.8,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut);
+        }
       });
-      return;
-    }
-
-    setState(() => _isSearching = true);
-
-    try {
-      final response =
-          await th.GoogleMapsPlaces(apiKey: GOOGLE_MAPS_API_KEY).autocomplete(
-        input,
-        language: 'en',
-        components: [th.Component(th.Component.country, country_global_key)],
-      );
-
-      setState(() {
-        predictions = response.predictions;
-        _isSearching = false;
-      });
-
-      if (predictions.isNotEmpty && _draggableController.isAttached) {
-        _draggableController.animateTo(0.8,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut);
-      }
-    } catch (e) {
-      setState(() => _isSearching = false);
-    }
+    });
   }
 
   @override
@@ -91,25 +63,38 @@ class _DestinationSelectionWidgetState
               ScrollSheetBar(),
               const SizedBox(height: Dimensions.paddingSize),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: _buildSearchBox(locationProvider),
               ),
               Expanded(
-                child: _isSearching
+                child: locationProvider.isSearching
                     ? Center(child: Loading())
-                    : predictions.isEmpty
+                    : locationProvider.predictions.isEmpty &&
+                            locationProvider.destinationController.text.isNotEmpty
                         ? const Center(
                             child: Text(
                               "No locations found.",
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.grey),
+                              style: TextStyle(fontSize: 16, color: Colors.grey),
                             ),
                           )
-                        : ListView(
+                        : ListView.builder(
                             physics: const ClampingScrollPhysics(),
                             controller: dragScrollController,
-                            children: _buildLocationList(locationProvider),
+                            itemCount: locationProvider.predictions.length,
+                            itemBuilder: (context, index) {
+                              final prediction = locationProvider.predictions[index];
+                              return ListTile(
+                                leading: const Icon(Icons.location_on, color: Colors.grey),
+                                title: Text(prediction['description'] ?? ''),
+                                onTap: () {
+                                  locationProvider.getPlaceDetails(prediction['place_id'] ?? '');
+                                  // Animate the sheet down after a selection is made
+                                  _draggableController.animateTo(0.4, // Back to initial size
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut);
+                                },
+                              );
+                            },
                           ),
               ),
             ],
@@ -126,14 +111,13 @@ class _DestinationSelectionWidgetState
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextField(
-        onChanged: searchPlaces,
+        onChanged: (value) => provider.searchPlaces(value),
         onTap: () {
           if (_draggableController.isAttached) {
             _draggableController.animateTo(0.95,
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut);
           }
-          setState(() => _isSearching = true);
         },
         controller: provider.destinationController,
         cursorColor: Colors.blue.shade900,
@@ -150,34 +134,19 @@ class _DestinationSelectionWidgetState
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(15),
+          suffixIcon: provider.destinationController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, color: Colors.grey),
+                  onPressed: () {
+                    provider.clearPredictions();
+                    _draggableController.animateTo(0.4, // Back to initial size
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut);
+                  },
+                )
+              : null,
         ),
       ),
     );
-  }
-
-  List<Widget> _buildLocationList(LocationProvider provider) {
-    return predictions.map((prediction) {
-      return ListTile(
-        leading: const Icon(Icons.location_on, color: Colors.grey),
-        title: Text(prediction.description ?? ''),
-        onTap: () async {
-          final details = await th.GoogleMapsPlaces(apiKey: GOOGLE_MAPS_API_KEY)
-              .getDetailsByPlaceId(prediction.placeId ?? '');
-
-          final double lat = details.result.geometry?.location.lat ?? 0.0;
-          final double lng = details.result.geometry?.location.lng ?? 0.0;
-
-          provider.setDestination(coordinates: LatLng(lat, lng));
-
-          if (mounted) {
-            // Ensure widget is still mounted before calling setState()
-            setState(() {
-              predictions = [];
-              _isSearching = false;
-            });
-          }
-        },
-      );
-    }).toList();
   }
 }

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../utils/app_constants.dart';
@@ -17,7 +16,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,10 +29,6 @@ class _SplashScreenState extends State<SplashScreen> {
               width: MediaQuery.of(context).size.width * 0.6, // Responsive width
             ),
             const SizedBox(height: 24),
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white), // Consistent color
-            ),
-            const SizedBox(height: 16),
             const Text(
               'Effortless Rides, Every Time', 
               style: TextStyle(

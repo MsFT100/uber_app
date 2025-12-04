@@ -8,7 +8,9 @@ import '../models/trip.dart';
 import '../services/api_service.dart';
 
 class AppStateProvider with ChangeNotifier {
-  final ApiService _apiService = ApiService();
+  final ApiService _apiService;
+  final String? _accessToken;
+  
   StreamSubscription<DocumentSnapshot>? _tripSubscription;
 
   Trip? _currentTrip;
@@ -17,7 +19,9 @@ class AppStateProvider with ChangeNotifier {
   Trip? get currentTrip => _currentTrip;
   Driver? get driver => _driver;
 
-  AppStateProvider() {
+  AppStateProvider({required ApiService apiService, String? accessToken})
+      : _apiService = apiService,
+        _accessToken = accessToken {
     // Initialization logic can go here
   }
 

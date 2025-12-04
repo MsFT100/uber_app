@@ -17,21 +17,10 @@ class AddNewAddressPage extends StatefulWidget {
 
 class _AddNewAddressPageState extends State<AddNewAddressPage> {
   String _address = "Tap to Select a location";
-  LatLng _selectedLocation = LatLng(37.7749, -122.4194);
-
-  @override
-  void initState() {
-    super.initState();
-    final locationProvider =
-        Provider.of<LocationProvider>(context, listen: false);
-    final position = locationProvider.currentPosition;
-    _selectedLocation = LatLng(position!.latitude, position.longitude);
-  }
 
   // Function to convert LatLng to Address
   Future<void> _getAddressFromLatLng(LatLng position) async {
-    final locationProvider =
-        Provider.of<LocationProvider>(context, listen: false);
+
     try {
       List<Placemark> placemarks =
           await placemarkFromCoordinates(position.latitude, position.longitude);
@@ -41,10 +30,9 @@ class _AddNewAddressPageState extends State<AddNewAddressPage> {
             "${place.street}, ${place.locality}, ${place.country}";
         setState(() {
           _address = newAddress;
-          _selectedLocation = position;
         });
       }
-      locationProvider.addAddressMarker(position);
+      // locationProvider.addAddressMarker(position);
     } catch (e) {
       print("Error getting address: $e");
     }
@@ -56,6 +44,8 @@ class _AddNewAddressPageState extends State<AddNewAddressPage> {
     savedAddresses.add(_address);
     await prefs.setStringList('addresses', savedAddresses);
 
+    if (!mounted) return;
+
     // Display a success message before popping the context
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -66,6 +56,7 @@ class _AddNewAddressPageState extends State<AddNewAddressPage> {
     // Wait for the SnackBar to be displayed before popping the context
     await Future.delayed(Duration(seconds: 2));
 
+    if (!mounted) return;
     Navigator.pop(context, _address); // Return to the previous screen
   }
 
@@ -124,34 +115,17 @@ class _AddNewAddressPageState extends State<AddNewAddressPage> {
 
           // New FAB for Centering Location
           Positioned(
-            top: 730, // Positioned below the first button
+            bottom: 100,
             right: 15,
-            child: Container(
-              width: 50,
-              height: 50,
-              padding: EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.blue, // Different color for distinction
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey,
-                    spreadRadius: 2,
-                    blurRadius: 6,
-                    offset: Offset(0, 3), // Changes position of shadow
-                  ),
-                ],
-              ),
-              child: IconButton(
-                icon: Icon(
-                  Icons.my_location,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  // Center the map on the user's current location
-                  LatLng newPos = LatLng(position.latitude, position.longitude);
-                  _mapController?.animateCamera(CameraUpdate.newLatLng(newPos));
-                },
+            child: FloatingActionButton(
+              onPressed: () {
+                // Center the map on the user's current location
+                LatLng newPos = LatLng(position.latitude, position.longitude);
+                _mapController?.animateCamera(CameraUpdate.newLatLng(newPos));
+              },
+              child: const Icon(
+                Icons.my_location,
+                color: Colors.white,
               ),
             ),
           ),

@@ -6,12 +6,7 @@ class AppConfig {
   // Private constructor to prevent instantiation of this class.
   AppConfig._();
 
-
-// TODO: Add your Google Maps API key
-  static const String googleMapsApiKey = 'YOUR_GOOGLE_MAPS_API_KEY';
-
   // --- Production URL ---
-  // TODO: Replace with your actual online backend URL.
   static const String _prodBaseUrl =
       'https://buco-ride-payment-system.vercel.app';
 
@@ -22,7 +17,8 @@ class AppConfig {
       return 'http://localhost:3000'; // For web
     }
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3001'; // Use 10.0.2.2 for Android emulator
+      //return 'http://10.0.2.2:3001'; // Use 10.0.2.2 for Android emulator
+      return 'http://192.168.0.100:3001'; // Use 10.0.2.2 for Android emulator
     }
     // For iOS simulator, macOS, etc.
     return 'http://localhost:3000';

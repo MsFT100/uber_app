@@ -3,10 +3,8 @@ import 'package:BucoRide/widgets/home_widgets/home_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-
-
 import '../helpers/constants.dart';
-import 'profile_page.dart';
+import 'profile/profile_page.dart';
 
 class Menu extends StatefulWidget {
   Menu({super.key});

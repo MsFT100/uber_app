@@ -16,9 +16,10 @@ class _MapState extends State<MapWidget> {
   @override
   Widget build(BuildContext context) {
     final locationProvider = Provider.of<LocationProvider>(context);
-    final position = locationProvider.currentPosition;
-    final _markers = locationProvider.markers;
-    final Set<Polyline> _polyline = locationProvider.polylines;
+    final center = locationProvider.center;
+    final markers = locationProvider.markers;
+    final polylines = locationProvider.polylines;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
       child: ClipRRect(
@@ -35,23 +36,18 @@ class _MapState extends State<MapWidget> {
                 offset: Offset(0.7, 0.7),
               ),
             ],
-            //border: Border.all(color: AppConstants.lightPrimary, width: 1.5),
             borderRadius: BorderRadius.circular(25),
           ),
           height: 250.0, // Fixed height like a banner
           width: MediaQuery.of(context).size.width, // Full width of the screen
           child: GoogleMap(
             initialCameraPosition: CameraPosition(
-              target: LatLng(position!.latitude, position.longitude),
+              target: center, // Use the safe 'center' property
               zoom: 16.0,
             ),
-
-            markers: _markers, // Add markers to the map
-            onMapCreated: (GoogleMapController controller) {
-              // Optional: Store the map controller if needed
-              locationProvider.onCreate(controller);
-            },
-            polylines: _polyline,
+            markers: markers, // Add markers to the map
+            onMapCreated: locationProvider.onCreate,
+            polylines: polylines,
           ),
         ),
       ),

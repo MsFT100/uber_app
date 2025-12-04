@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -14,6 +14,7 @@ enum Status { Uninitialized, Authenticated, Authenticating, Unauthenticated }
 class UserProvider with ChangeNotifier {
   final FirebaseAuth _auth;
   final GoogleSignIn _googleSignIn;
+  final  _firebaseMessaging = FirebaseMessaging.instance;
   final ApiService _apiService = ApiService();
 
   User? _user;
@@ -58,17 +59,58 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 
+// 3. REPLACED THE ENTIRE signIn METHOD WITH THE LOGIC FROM YOUR DRIVER APP
   Future<String> signIn() async {
     try {
+      if (email.text.trim().isEmpty || password.text.trim().isEmpty) {
+        return "Email and Password cannot be empty.";
+      }
+
       _status = Status.Authenticating;
       notifyListeners();
-      await _auth.signInWithEmailAndPassword(
-          email: email.text.trim(), password: password.text.trim());
+
+      // Step 1: Authenticate with Firebase
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email.text.trim(),
+        password: password.text.trim(),
+      );
+      _user = userCredential.user;
+      if (_user == null) {
+        throw Exception("Firebase user not found after sign-in.");
+      }
+
+      // Step 2: Get the Firebase ID Token (force refresh for a new token)
+      final firebaseToken = await _user!.getIdToken(true);
+
+      // Step 3: Login to your backend with the Firebase token
+      final backendResponse = await _apiService.loginRider(
+        firebaseToken!,
+        fcmToken: await _firebaseMessaging.getToken(), // Also get the FCM token for notifications
+      );
+
+      // Step 4: Store the data from your backend
+      _rider = backendResponse.rider;
+      _accessToken = backendResponse.accessToken;
+
+      // Step 5: Set the final status and notify the UI
+      _status = Status.Authenticated;
+      notifyListeners();
+
       return "Success";
     } on FirebaseAuthException catch (e) {
       _status = Status.Unauthenticated;
       notifyListeners();
-      return e.message ?? "An unknown error occurred.";
+      return e.message ?? "An unknown authentication error occurred.";
+    } catch (e) {
+      // Catch errors from your API service or other issues
+      _status = Status.Unauthenticated;
+      notifyListeners();
+      debugPrint("Sign In Error: $e");
+      // Provide a user-friendly error message
+      if (e.toString().contains('Exception:')) {
+        return e.toString().split('Exception: ')[1];
+      }
+      return "An error occurred during login. Please try again.";
     }
   }
 
@@ -125,6 +167,7 @@ class UserProvider with ChangeNotifier {
       _status = Status.Authenticating;
       notifyListeners();
 
+      // Step 1: Start the Google Sign-In process
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         _status = Status.Unauthenticated;
@@ -132,27 +175,62 @@ class UserProvider with ChangeNotifier {
         return "Google sign in was cancelled.";
       }
 
+      // Step 2: Get the authentication tokens from Google
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      await _auth.signInWithCredential(credential);
-      return "Success";
+      // Step 3: Sign in to Firebase with the Google credential
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      _user = userCredential.user;
+      if (_user == null) {
+        throw Exception("Firebase user not found after Google sign-in.");
+      }
+
+      // Step 4: (THIS WAS THE MISSING PART)
+      // Now that we are logged into Firebase, log into our own backend
+      await login();
+
+      // Step 5: Check if the backend login was successful
+      if (_status != Status.Authenticated) {
+        // This can happen if the user exists in Firebase but not on your backend.
+        // We should register them on our backend and try logging in again.
+        debugPrint("User not found on backend. Registering now...");
+        await _apiService.registerRider(
+          uid: _user!.uid,
+          name: _user!.displayName ?? 'Unknown Name',
+          phone: _user!.phoneNumber ?? '', // Phone might be null
+          email: _user!.email ?? 'no-email@google.com',
+        );
+        // Try to log in to the backend again after successful registration
+        await login();
+      }
+
+      // Final check
+      if (_status == Status.Authenticated) {
+        return "Success";
+      } else {
+        throw Exception("Backend login failed after Google Sign-In and registration attempt.");
+      }
     } catch (e) {
       _status = Status.Unauthenticated;
       notifyListeners();
-      return "An unknown error occurred.";
+      debugPrint("Google Sign-In Error: $e");
+      if (e.toString().contains('Exception:')) {
+        return e.toString().split('Exception: ')[1];
+      }
+      return "An error occurred with Google Sign-In.";
     }
   }
 
   Future<void> login({int retries = 0}) async {
     try {
-      final idToken = await _user?.getIdToken();
+      final idToken = await _user?.getIdToken(true);
       if (idToken == null) throw Exception('Could not get ID token.');
 
-      final response = await _apiService.loginRider(idToken);
+      final response = await _apiService.loginRider(idToken, fcmToken: await _firebaseMessaging.getToken());
       _rider = response.rider;
       _accessToken = response.accessToken;
       _status = Status.Authenticated;
@@ -178,6 +256,7 @@ class UserProvider with ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    clearController();
     await _auth.signOut();
     await _googleSignIn.signOut();
     _status = Status.Unauthenticated;

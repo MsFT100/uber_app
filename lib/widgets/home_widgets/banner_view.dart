@@ -1,6 +1,5 @@
 import 'package:BucoRide/helpers/screen_navigation.dart';
 import 'package:BucoRide/screens/home.dart';
-import 'package:BucoRide/utils/images.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 
@@ -15,11 +14,9 @@ class _BannerViewState extends State<BannerView> {
   int activeIndex = 0;
 
   final List<String> bannerImages = [
-  'https://firebasestorage.googleapis.com/v0/b/buricode-6e54c.firebasestorage.app/o/Banners%2FTaxi%20Business%20Card%20in%20Black%20Yellow%20Illustrative%20_style.png?alt=media&token=0d854dd3-4924-4ae5-aef2-44a3871e6fae',
-  'https://firebasestorage.googleapis.com/v0/b/buricode-6e54c.firebasestorage.app/o/Banners%2FTaxi%20Business%20Card%20in%20Black%20Yellow%20Illustrative%20_style.png?alt=media&token=0d854dd3-4924-4ae5-aef2-44a3871e6fae',
-
-];
-
+    'https://firebasestorage.googleapis.com/v0/b/buricode-6e54c.firebasestorage.app/o/Banners%2FTaxi%20Business%20Card%20in%20Black%20Yellow%20Illustrative%20_style.png?alt=media&token=0d854dd3-4924-4ae5-aef2-44a3871e6fae',
+    'https://firebasestorage.googleapis.com/v0/b/buricode-6e54c.firebasestorage.app/o/Banners%2FTaxi%20Business%20Card%20in%20Black%20Yellow%20Illustrative%20_style.png?alt=media&token=0d854dd3-4924-4ae5-aef2-44a3871e6fae',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -61,13 +58,35 @@ class _BannerViewState extends State<BannerView> {
                         return Center(
                           child: CircularProgressIndicator(
                             value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    (loadingProgress.expectedTotalBytes ?? 1)
                                 : null,
                           ),
                         );
                       },
                       errorBuilder: (context, error, stackTrace) {
-                        return Image.asset(Images.placeholder, fit: BoxFit.cover);
+                        return Container(
+                          width: MediaQuery.of(context).size.width,
+                          color: Colors.grey[200],
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: Colors.grey[400],
+                                size: 40,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Image not available',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
                       },
                     ),
                   ),

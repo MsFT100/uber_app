@@ -1,9 +1,9 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=C:\Users\lenno\flutter"
-export "FLUTTER_APPLICATION_PATH=D:\AndroidStudioProjects\uber_app"
+export "FLUTTER_ROOT=/home/msft/snap/flutter/common/flutter"
+export "FLUTTER_APPLICATION_PATH=/home/msft/android_studio/uber_app"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
-export "FLUTTER_TARGET=lib\main.dart"
+export "FLUTTER_TARGET=lib/main.dart"
 export "FLUTTER_BUILD_DIR=build"
 export "FLUTTER_BUILD_NAME=1.0.1"
 export "FLUTTER_BUILD_NUMBER=3"

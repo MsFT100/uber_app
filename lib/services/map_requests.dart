@@ -25,13 +25,14 @@ class GoogleMapsServices {
     Map legs = values["routes"][0]["legs"][0];
 
     RouteModel route = RouteModel(
-      points: routes["overview_polyline"]["points"],
-      distance: Distance.fromMap(legs['distance']),
-      timeNeeded: TimeNeeded.fromMap(legs['duration']),
-      endAddress: legs['end_address'],
-      startAddress:
-          legs['start_address'], // Fix: It was using end_address before
-    );
+        points: routes["overview_polyline"]["points"],
+        distance: Distance.fromMap(legs['distance']),
+        timeNeeded: TimeNeeded.fromMap(legs['duration']),
+        endAddress: legs['end_address'],
+        startAddress: legs['start_address'],
+        /// THE FIX: We now pass a List<Fare> as required by the RouteModel constructor.
+        // This legacy class isn't used, but this makes the code compile.
+        fares: [Fare(value: 0, currency: 'KES', vehicleType: '')]);
 
     return route;
   }

@@ -4,11 +4,11 @@ import 'package:BucoRide/screens/menu.dart';
 import 'package:BucoRide/screens/parcels/parcel_page.dart';
 import 'package:BucoRide/utils/app_constants.dart';
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
+import 'dart:async';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:googlemaps_flutter_webservices/places.dart' as th;
 import 'package:provider/provider.dart';
 
+import '../widgets/map_action_button.dart';
 import '../widgets/loading_widgets/loading_location.dart';
 
 class MapScreen extends StatefulWidget {
@@ -18,224 +18,151 @@ class MapScreen extends StatefulWidget {
   _MapScreenState createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   final TextEditingController destinationController = TextEditingController();
-  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+  // THE FIX: Create the GlobalKey here, once.
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final googlePlaces = th.GoogleMapsPlaces(
-      apiKey: AppConstants.GOOGLE_MAPS_API_KEY); // Initialize API client
-  List<dynamic> predictions = [];
-  LatLng? selectedLocation;
+  Timer? _debounce;
+  Future<void>? _initFuture;
 
   @override
   void initState() {
     super.initState();
+    _initFuture = Provider.of<LocationProvider>(context, listen: false).Initialize(this);
+
+    destinationController.addListener(() {setState(() {});});
   }
 
   @override
   Widget build(BuildContext context) {
-    final locationProvider =
-        Provider.of<LocationProvider>(context, listen: true);
+    return FutureBuilder(
+      future: _initFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return LoadingLocationScreen();
+        }
 
-    final position = locationProvider.currentPosition;
-    final showTraffic = locationProvider.isTrafficEnabled;
-    final _mapController = locationProvider.mapController;
-    final _markers = locationProvider.markers;
-    // Get the current polyline to be drawn on the map
-    final Set<Polyline> _polyline = locationProvider.polylines;
+        if (snapshot.hasError) {
+          return Center(child: Text('Error initializing location: ${snapshot.error}'));
+        }
 
-    return Scaffold(
-        key: scaffoldKey,
-        body: position == null
-            ? Center(child: LoadingLocationScreen())
-            : Stack(
+        return Consumer<LocationProvider>(
+          builder: (context, locationProvider, child) {
+            final position = locationProvider.currentPosition;
+
+            if (position == null) {
+              return LoadingLocationScreen();
+            }
+
+            final _mapController = locationProvider.mapController;
+            final _markers = locationProvider.markers;
+            final Set<Polyline> _polyline = locationProvider.polylines;
+
+            return Scaffold(
+              // Use the persistent key here
+              key: _scaffoldKey,
+              body: Stack(
                 children: [
                   GoogleMap(
                     onMapCreated: (GoogleMapController controller) {
-                      locationProvider.onCreate(
-                          controller); // This ensures the map controller is set
+                      locationProvider.onCreate(controller);
                     },
                     initialCameraPosition: CameraPosition(
                         target: LatLng(position.latitude, position.longitude),
                         zoom: 17.0),
-                    trafficEnabled: showTraffic,
+                    trafficEnabled: false,
                     mapType: MapType.normal,
-                    compassEnabled: true, // Enables the compass for orientation
-                    rotateGesturesEnabled:
-                        true, // Allows users to rotate the map
-                    zoomGesturesEnabled:
-                        true, // Enables zooming using pinch gestures
-                    zoomControlsEnabled: true, // Shows zoom in/out buttons
-                    scrollGesturesEnabled: true, // Allows scrolling (panning)
+                    compassEnabled: true,
+                    rotateGesturesEnabled: true,
+                    zoomGesturesEnabled: true,
+                    zoomControlsEnabled: true,
+                    scrollGesturesEnabled: true,
                     tiltGesturesEnabled: true,
                     markers: _markers,
                     onCameraMove: locationProvider.onCameraMove,
                     polylines: _polyline,
                   ),
 
-                  ///HOME POSITION BUTTON
-                  Positioned(
+                  // ... (rest of your Stack children are fine) ...
+
+                  // Home Button
+                  MapActionButton(
                     top: 45.0,
                     left: 23.0,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      padding: EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: AppConstants
-                            .lightPrimary, // Different color for distinction
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.shade600,
-                            spreadRadius: 2,
-                            blurRadius: 6,
-                            offset: Offset(0, 3), // Changes position of shadow
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.home,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {
-                          changeScreen(context, Menu());
-                        },
-                      ),
-                    ),
+                    icon: Icons.home,
+                    onPressed: () {
+                      locationProvider.cancelRideRequest();
+                      changeScreen(context, Menu());
+                    },
                   ),
 
-                  /// PARCEL POSITION BUTTON
-                  Positioned(
+                  // Parcel Button
+                  MapActionButton(
                     top: 110.0,
                     left: 23.0,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      padding: EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: AppConstants
-                            .lightPrimary, // Different color for distinction
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.shade600,
-                            spreadRadius: 2,
-                            blurRadius: 6,
-                            offset: Offset(0, 3), // Changes position of shadow
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.delivery_dining,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {
-                          changeScreen(context, ParcelPage());
-                        },
-                      ),
-                    ),
+                    icon: Icons.delivery_dining,
+                    onPressed: () => changeScreen(context, ParcelPage()),
                   ),
-                  // Floating button positioned at the bottom right
 
-                  // New FAB for Centering Location
-                  Positioned(
+                  // Center Location Button
+                  MapActionButton(
                     top: 170.0,
                     left: 23.0,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      padding: EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.blue, // Different color for distinction
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.shade600,
-                            spreadRadius: 2,
-                            blurRadius: 6,
-                            offset: Offset(0, 3), // Changes position of shadow
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.my_location,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {
-                          // Center the map on the user's current location
-                          LatLng newPos =
-                              LatLng(position.latitude, position.longitude);
-                          _mapController
-                              ?.animateCamera(CameraUpdate.newLatLng(newPos));
-                        },
-                      ),
-                    ),
+                    icon: Icons.my_location,
+                    backgroundColor: Colors.blue,
+                    onPressed: () {
+                      LatLng newPos = LatLng(position.latitude, position.longitude);
+                      _mapController?.animateCamera(CameraUpdate.newLatLng(newPos));
+                    },
                   ),
+
+                  if (locationProvider.destinationCoordinates != null)
+                    _buildRideRequestButton(context, locationProvider),
                 ],
-              ));
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
-  // Fetch Place Predictions
-  Future<void> searchPlaces(String query) async {
-    if (query.isEmpty) return;
-
-    try {
-      final response = await googlePlaces.autocomplete(query,
-          language: 'en'); // Call the autocomplete method
-
-      if (response.isOkay) {
-        setState(() {
-          predictions = response.predictions;
-        });
-      } else {
-        print("Error fetching predictions: ${response.errorMessage}");
-      }
-    } catch (e) {
-      print("Search places error: $e");
-    }
+  Widget _buildRideRequestButton(BuildContext context, LocationProvider locationProvider) {
+    return Positioned(
+      bottom: 30,
+      left: 20,
+      right: 20,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppConstants.lightPrimary,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 5,
+        ),
+        onPressed: () async {
+          // Wait for route & estimate to be fetched, then show vehicle selection
+          await locationProvider.getRouteAndEstimate();
+          locationProvider.show = Show.VEHICLE_SELECTION;
+        },
+        child: Text(
+          'Confirm Destination',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
   }
 
-  // Fetch Place Details and Update Map
-  Future<void> getPlaceDetails(String placeId) async {
-    try {
-      final response = await googlePlaces.getDetailsByPlaceId(
-          placeId); // Use `placeDetails` instead of `details`
-
-      if (response.isOkay) {
-        final result = response.result;
-        final geometry = result.geometry;
-        final location = geometry?.location;
-
-        if (location != null) {
-          final latLng = LatLng(location.lat, location.lng);
-
-          // Update Map and Clear Predictions
-          setState(() {
-            //selectedLocation = latLng;
-
-            predictions = [];
-            destinationController.clear();
-          });
-
-          // Optionally, fetch address
-          final placemarks = await placemarkFromCoordinates(
-            location.lat,
-            location.lng,
-          );
-          final placemark = placemarks.first;
-          print("Selected Location: $latLng");
-          print(
-              "Address: ${placemark.street}, ${placemark.locality}, ${placemark.country}");
-        }
-      } else {
-        print("Error fetching place details: ${response.errorMessage}");
-      }
-    } catch (e) {
-      print("Error getting place details: $e");
-    }
+  @override
+  void dispose() {
+    destinationController.dispose();
+    _debounce?.cancel();
+    super.dispose();
   }
 }

@@ -1,26 +1,26 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ui' as ui;
 
+import 'package:BucoRide/services/api_service.dart';
 import 'package:BucoRide/utils/app_constants.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 
-import '../config/app_config.dart';
 import '../models/driver.dart';
 import '../models/route.dart';
-import '../services/map_requests.dart';
 import '../utils/images.dart';
 
 enum Show {
+  CONFIRMATION_SELECTION,
   DESTINATION_SELECTION,
   PICKUP_SELECTION,
+  VEHICLE_SELECTION,
   PAYMENT_METHOD_SELECTION,
   DRIVER_FOUND,
   TRIP,
@@ -29,40 +29,40 @@ enum Show {
 }
 
 class LocationProvider with ChangeNotifier {
+  final ApiService _apiService;
+  final String? _accessToken;
+
   static const PICKUP_MARKER_ID = 'pickup';
   static const LOCATION_MARKER_ID = 'location';
   static const DESTINATION_MARKER_ID = 'destination';
   static const ADDRESS_MARKER_ID = 'address';
 
   Show _show = Show.DESTINATION_SELECTION;
+  bool _isSearching = false;
+
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
   Position? _currentPosition;
   StreamSubscription<Position>? _positionStreamSubscription;
-  StreamSubscription<QuerySnapshot>? _driverStreamSubscription;
+  StreamSubscription<DocumentSnapshot>? _tripStreamSubscription;
   String? locationAddress;
   RouteModel? routeModel;
   Timer? _debounce;
   String _riderAddress = 'Loading...';
   static LatLng _center = LatLng(0, 0);
 
-  late LatLng destinationCoordinates;
-  late LatLng pickupCoordinates = _center;
+  LatLng? destinationCoordinates;
+  LatLng pickupCoordinates = _center;
   LatLng _lastPosition = _center;
 
-  // Getters
-  Show get show => _show;
-  Position? get currentPosition => _currentPosition;
-  GoogleMapController? get mapController => _mapController;
-  Set<Marker> get markers => _markers;
-  String get riderAddress => _riderAddress;
-  Set<Polyline> get polylines => _polylines;
-  LatLng get center => _center;
-  LatLng get lastPosition => _lastPosition;
+  String? tripId;
+  String? tripStatus;
+  Driver? driver;
+  String? _sessionToken;
+  String selectedVehicleType = 'sedan'; // Default vehicle type
 
-  bool _isTrafficEnabled = false;
-  get isTrafficEnabled => _isTrafficEnabled;
+  List<dynamic> _predictions = [];
 
   TextEditingController pickupLocationController = TextEditingController();
   TextEditingController destinationController = TextEditingController();
@@ -73,33 +73,55 @@ class LocationProvider with ChangeNotifier {
   BitmapDescriptor carIcon = BitmapDescriptor.defaultMarker;
   BitmapDescriptor addressIcon = BitmapDescriptor.defaultMarker;
 
-  LocationProvider() {
-    _initialize();
-  }
-
-  set show(Show value) {
-    _show = value;
+  Show get show => _show;
+  set show(Show newShow) {
+    _show = newShow;
     notifyListeners();
   }
+  bool get isSearching => _isSearching;
+  Position? get currentPosition => _currentPosition;
+  GoogleMapController? get mapController => _mapController;
+  Set<Marker> get markers => _markers;
+  String get riderAddress => _riderAddress;
+  Set<Polyline> get polylines => _polylines;
+  LatLng get center => _center;
+  List<dynamic> get predictions => _predictions;
 
-  // ===== INITIALIZATION & LIFECYCLE =====
+  //--- NEW PROPERTIES FOR ANIMATION ---
+  AnimationController? _bounceController;
+  Animation<double>? _bounceAnimation;
 
-  Future<void> _initialize() async {
+  LocationProvider({required ApiService apiService, String? accessToken})
+      : _apiService = apiService,
+        _accessToken = accessToken {
+  }
+
+  Future<void> Initialize(TickerProvider vsync) async {
+
+    // --- INITIALIZE ANIMATION CONTROLLER ---
+    _bounceController = AnimationController(
+        duration: const Duration(milliseconds: 1000), vsync: vsync);
+    _bounceAnimation = CurvedAnimation(
+        parent: _bounceController!, curve: Curves.bounceOut);
+    _bounceAnimation!.addListener(() {
+      notifyListeners();
+    });
+    // --- END INITIALIZATION ---
     await _loadCustomMarkers();
     await fetchLocation();
     _startPositionStream();
-    _listenToDrivers();
   }
 
   @override
   void dispose() {
+    _bounceController?.dispose();
     _positionStreamSubscription?.cancel();
-    _driverStreamSubscription?.cancel();
+    _tripStreamSubscription?.cancel();
     _debounce?.cancel();
+    pickupLocationController.dispose();
+    destinationController.dispose();
     super.dispose();
   }
-
-  // ===== GOOGLE MAPS CONTROLLER METHODS =====
 
   void onCreate(GoogleMapController controller) {
     _mapController = controller;
@@ -107,20 +129,14 @@ class LocationProvider with ChangeNotifier {
   }
 
   void onCameraMove(CameraPosition position) {
-    if (show == Show.PICKUP_SELECTION) {
+    if (_show == Show.PICKUP_SELECTION) {
       _lastPosition = position.target;
-      changePickupLocationAddress(address: "Loading...");
-      _markers.removeWhere((m) => m.markerId.value == PICKUP_MARKER_ID);
       pickupCoordinates = _lastPosition;
-      addPickupMarker(position.target);
-
       _debounce?.cancel();
-      _debounce = Timer(Duration(milliseconds: 800), () async {
+      _debounce = Timer(const Duration(milliseconds: 800), () async {
         try {
           List<Placemark> placemark = await placemarkFromCoordinates(
-            position.target.latitude,
-            position.target.longitude,
-          );
+              position.target.latitude, position.target.longitude);
           pickupLocationController.text = placemark.isNotEmpty
               ? placemark[0].street ?? 'Unknown location'
               : 'Unknown location';
@@ -132,29 +148,30 @@ class LocationProvider with ChangeNotifier {
     }
   }
 
-  void changePickupLocationAddress({required String address}) {
-    pickupLocationController.text = address;
-    _center = pickupCoordinates;
-    notifyListeners();
-  }
-
-  // ===== LOCATION & ADDRESS METHODS =====
-
   Future<void> fetchLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return Future.error('Location services are disabled.');
+      if (!serviceEnabled) return;
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission != LocationPermission.whileInUse && permission != LocationPermission.always) return;
+        if (permission != LocationPermission.whileInUse &&
+            permission != LocationPermission.always) return;
       }
 
-      _currentPosition = await Geolocator.getCurrentPosition();
+      Position? lastKnownPosition = await Geolocator.getLastKnownPosition();
+      if (lastKnownPosition != null) {
+        _currentPosition = lastKnownPosition;
+        _center = LatLng(lastKnownPosition.latitude, lastKnownPosition.longitude);
+        _addCurrentLocationMarker(_center);
+      }
+
+      _currentPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       _center = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       _addCurrentLocationMarker(_center);
       await setLocationAddress();
+
     } catch (e) {
       print('Error fetching location: $e');
     }
@@ -163,9 +180,11 @@ class LocationProvider with ChangeNotifier {
   Future<void> setLocationAddress() async {
     try {
       if (_currentPosition == null) return;
-      List<Placemark> placemarks = await placemarkFromCoordinates(_currentPosition!.latitude, _currentPosition!.longitude);
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+          _currentPosition!.latitude, _currentPosition!.longitude);
       if (placemarks.isNotEmpty) {
-        locationAddress = "${placemarks.first.street}, ${placemarks.first.locality}";
+        locationAddress =
+        "${placemarks.first.street}, ${placemarks.first.locality}";
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('address', locationAddress!);
       }
@@ -175,46 +194,79 @@ class LocationProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ===== STREAMS & LISTENERS =====
-
   void _startPositionStream() {
-    final locationSettings = LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 10);
-    _positionStreamSubscription = Geolocator.getPositionStream(locationSettings: locationSettings).listen((Position position) {
+    if (_currentPosition == null) return;
+
+    final locationSettings =
+    LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 10);
+    _positionStreamSubscription = Geolocator.getPositionStream(
+        locationSettings: locationSettings)
+        .listen((Position position) {
       _currentPosition = position;
       _center = LatLng(position.latitude, position.longitude);
       _addCurrentLocationMarker(_center);
-      if (show == Show.TRIP) {
-        addRiderRoutePolyline(_center, destinationCoordinates);
-      }
       notifyListeners();
     });
   }
 
-  void _listenToDrivers() {
-    _driverStreamSubscription = FirebaseFirestore.instance.collection('drivers').where('isOnline', isEqualTo: true).snapshots().listen((snapshot) {
-      _updateDriverMarkers(snapshot.docs);
+  void listenToTrip(String currentTripId) {
+    tripId = currentTripId;
+    _tripStreamSubscription = FirebaseFirestore.instance
+        .collection('trips')
+        .doc(tripId)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        final data = snapshot.data() as Map<String, dynamic>;
+        tripStatus = data['status'];
+
+        if (data.containsKey('driver') && data.containsKey('driver_location')) {
+          driver = Driver.fromMap(data['driver']);
+          final location = data['driver_location'] as GeoPoint;
+          final driverPosition = LatLng(location.latitude, location.longitude);
+          _updateDriverMarker(driverPosition, driver!.name);
+        } else {
+          driver = null;
+          _markers.removeWhere((m) => m.markerId.value == 'driver');
+        }
+
+        handleTripStatus(tripStatus);
+      }
     });
   }
 
-  // ===== MARKER METHODS =====
+  void handleTripStatus(String? status) {
+    if (status == null) return;
 
-  void _updateDriverMarkers(List<QueryDocumentSnapshot> driverDocs) {
-    _markers.removeWhere((m) => m.markerId.value.startsWith('driver_'));
-    for (var doc in driverDocs) {
-      final data = doc.data() as Map<String, dynamic>?;
-      final pos = data?['position'] as GeoPoint?;
-      if (data != null && pos != null) {
-        final driver = Driver.fromMap(data);
-        if (driver.id != null) {
-          _markers.add(Marker(
-            markerId: MarkerId('driver_${driver.id!}'),
-            position: LatLng(pos.latitude, pos.longitude),
-            icon: carIcon,
-            infoWindow: InfoWindow(title: driver.name),
-          ));
-        }
-      }
+    switch (status) {
+      case 'requested':
+        show = Show.SEARCHING_DRIVER;
+        break;
+      case 'accepted':
+      case 'en_route_to_pickup':
+      case 'arrived_at_pickup':
+        show = Show.DRIVER_FOUND;
+        break;
+      case 'in_progress':
+        show = Show.TRIP;
+        break;
+      case 'completed':
+        show = Show.TRIP_COMPLETE;
+        break;
+      default:
+        show = Show.DESTINATION_SELECTION;
+        break;
     }
+  }
+
+  void _updateDriverMarker(LatLng driverPosition, String driverName) {
+    _markers.removeWhere((m) => m.markerId.value == 'driver');
+    _markers.add(Marker(
+      markerId: const MarkerId('driver'),
+      position: driverPosition,
+      icon: carIcon,
+      infoWindow: InfoWindow(title: driverName),
+    ));
     notifyListeners();
   }
 
@@ -228,33 +280,101 @@ class LocationProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void addPickupMarker(LatLng position) {
-    _markers.removeWhere((m) => m.markerId.value == PICKUP_MARKER_ID);
-    _markers.add(Marker(
-        markerId: MarkerId(PICKUP_MARKER_ID),
-        position: position,
-        infoWindow: InfoWindow(title: "Pickup"),
-        icon: startIcon));
+  void selectVehicle(String vehicleType) {
+    // Normalize vehicleType values so different callers (menu buttons,
+    // programmatic selections) map to the labels used in the UI.
+    final key = vehicleType.toLowerCase();
+    switch (key) {
+      case 'motorbike':
+      case 'motor bike':
+        selectedVehicleType = 'Motorbike';
+        break;
+      case 'sedan':
+      case 'car':
+        selectedVehicleType = 'Sedan';
+        break;
+      case 'van':
+        selectedVehicleType = 'Van';
+        break;
+      case 'tuk-tuk':
+      case 'tuktuk':
+      case 'tuk_tuk':
+        selectedVehicleType = 'Tuk-Tuk';
+        break;
+      default:
+        // Use provided label if unknown — UI will attempt to resolve it.
+        selectedVehicleType = vehicleType;
+    }
     notifyListeners();
   }
 
-  void addAddressMarker(LatLng position) {
-    _markers.removeWhere((m) => m.markerId.value == ADDRESS_MARKER_ID);
-    _markers.add(Marker(
-      markerId: MarkerId(ADDRESS_MARKER_ID),
-      position: position,
-      icon: addressIcon,
-      infoWindow: InfoWindow(title: 'Selected Address'),
-    ));
+  Future<void> getRouteAndEstimate() async {
+    try {
+      if (_accessToken == null || destinationCoordinates == null) {
+        print("API Service, access token, or destination not initialized.");
+        return;
+      }
+
+      // UPDATED: Make two API calls in parallel for speed
+      final results = await Future.wait([
+        _apiService.getDirectionsProxy(
+          accessToken: _accessToken,
+          origin: _center,
+          destination: destinationCoordinates!,
+        ),
+        _apiService.getFareEstimate(
+          accessToken: _accessToken,
+          pickup: _center,
+          dropoff: destinationCoordinates!,
+        )
+      ]);
+
+      final routeData = results[0];
+      final fareData = results[1] as Map<String, dynamic>;
+
+      if (routeData != null) {
+        final encodedPolyline = routeData['polyline'];
+
+        // Parse the list of fares from the new endpoint's response
+        final List<Fare> fareList = (fareData['fares'] as List)
+            .map((fareMap) => Fare.fromMap(fareMap))
+            .toList();
+
+        routeModel = RouteModel(
+          points: encodedPolyline,
+          distance: Distance.fromMap(routeData['distance']),
+          timeNeeded: TimeNeeded.fromMap(routeData['duration']),
+          // Pass the list of fares to the model
+          fares: fareList,
+          startAddress: pickupLocationController.text,
+          endAddress: destinationController.text,
+        );
+
+        _addDestinationMarker(_center, destinationCoordinates!);
+
+        _polylines.add(Polyline(
+          polylineId: const PolylineId('rider_route'),
+          points: _decodePolyline(encodedPolyline),
+          color: AppConstants.lightPrimary,
+          width: 5,
+        ));
+      }
+    } catch (e) {
+      print("Error getting route and estimate: $e");
+    }
+    // We notify listeners here after all async work is done
     notifyListeners();
   }
 
-  void addTripHistoryMarkers(LatLng start, LatLng end) {
-    clearPolylines();
+  void _addDestinationMarker(LatLng start, LatLng end) {
     clearMarkers();
-    _markers.add(Marker(markerId: MarkerId('start'), position: start, icon: startIcon, infoWindow: InfoWindow(title: "From")));
-    _markers.add(Marker(markerId: MarkerId('end'), position: end, icon: endIcon, infoWindow: InfoWindow(title: "To")));
-    _mapController?.animateCamera(CameraUpdate.newLatLngBounds(_calculateBounds(start, end), 100));
+    _markers.add(Marker(markerId: MarkerId(LOCATION_MARKER_ID), position: start, icon: startIcon));
+    _markers.add(Marker(markerId: MarkerId(DESTINATION_MARKER_ID), position: end, icon: endIcon));
+    _mapController?.animateCamera(CameraUpdate.newLatLngBounds(_calculateBounds(start, end), 120));
+  }
+
+  void clearPolylines() {
+    _polylines.clear();
     notifyListeners();
   }
 
@@ -263,78 +383,15 @@ class LocationProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<BitmapDescriptor> _bitmapDescriptorFromAsset(String asset, {required int width, required int height}) async {
-    final data = await rootBundle.load(asset);
-    final codec = await ui.instantiateImageCodec(
-      data.buffer.asUint8List(),
-      targetWidth: width,
-      targetHeight: height,
-    );
-    final frame = await codec.getNextFrame();
-    final byteData = await frame.image.toByteData(format: ui.ImageByteFormat.png);
-    if (byteData == null) {
-      return BitmapDescriptor.defaultMarker;
-    }
-    return BitmapDescriptor.bytes(byteData.buffer.asUint8List());
-  }
-
-  Future<void> _loadCustomMarkers() async {
-    carIcon = await _bitmapDescriptorFromAsset(Images.carTop, width: 30, height: 30);
-    markerIcon = await _bitmapDescriptorFromAsset(Images.location, width: 30, height: 30);
-    startIcon = await _bitmapDescriptorFromAsset(Images.location, width: 30, height: 30);
-    endIcon = await _bitmapDescriptorFromAsset(Images.mapLocationIcon, width: 200, height: 200);
-    addressIcon = await _bitmapDescriptorFromAsset(Images.mapLocationIcon, width: 200, height: 200);
-  }
-
-  // ===== PO LYLINE & ROUTE METHODS =====
-
-  Future<void> addRiderRoutePolyline(LatLng start, LatLng end) async {
-    try {
-      String? encodedPolyline = await _getDirections(start, end);
-      _addDestinationMarker(start, end);
-      if (encodedPolyline != null) {
-        _polylines.add(Polyline(
-          polylineId: PolylineId('rider_route'),
-          points: _decodePolyline(encodedPolyline),
-          color: AppConstants.lightPrimary,
-          width: 5,
-        ));
-        await _fetchRouteDetails(start, end);
-        notifyListeners();
-      }
-    } catch (e) {
-      print("Error adding polyline: $e");
-    }
-  }
-
-  void _addDestinationMarker(LatLng start, LatLng end) {
+  void cancelRideRequest() {
+    show = Show.DESTINATION_SELECTION;
+    selectedVehicleType = 'Motorbike'; // Reset to default
     clearMarkers();
-    _markers.add(Marker(markerId: MarkerId(LOCATION_MARKER_ID), position: start, icon: startIcon));
-    _markers.add(Marker(markerId: MarkerId(DESTINATION_MARKER_ID), position: end, icon: endIcon));
-  }
-
-  void clearPolylines() {
-    _polylines.clear();
+    clearPolylines();
+    destinationController.clear();
+    destinationCoordinates = null;
+    routeModel = null;
     notifyListeners();
-  }
-
-  Future<void> _fetchRouteDetails(LatLng start, LatLng end) async {
-    try {
-      routeModel = await GoogleMapsServices().getRouteByCoordinates(start, end);
-      notifyListeners();
-    } catch (e) {
-      print("Error fetching route: $e");
-    }
-  }
-
-  Future<String?> _getDirections(LatLng origin, LatLng destination) async {
-    final url = 'https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&key=${AppConfig.googleMapsApiKey}';
-    var response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      var data = jsonDecode(response.body);
-      if (data['status'] == 'OK') return data['routes'][0]['overview_polyline']['points'];
-    }
-    return null;
   }
 
   List<LatLng> _decodePolyline(String encoded) {
@@ -366,20 +423,194 @@ class LocationProvider with ChangeNotifier {
 
   LatLngBounds _calculateBounds(LatLng start, LatLng end) {
     return LatLngBounds(
-      southwest: LatLng(start.latitude < end.latitude ? start.latitude : end.latitude, start.longitude < end.longitude ? start.longitude : end.longitude),
-      northeast: LatLng(start.latitude > end.latitude ? start.latitude : end.latitude, start.longitude > end.longitude ? start.longitude : end.longitude),
+      southwest: LatLng(
+        start.latitude < end.latitude ? start.latitude : end.latitude,
+        start.longitude < end.longitude ? start.longitude : end.longitude,
+      ),
+      northeast: LatLng(
+        start.latitude > end.latitude ? start.latitude : end.latitude,
+        start.longitude > end.longitude ? start.longitude : end.longitude,
+      ),
     );
   }
 
-  // ===== UI STATE MANAGEMENT =====
+  Future<void> searchPlaces(String query) async {
+    if (query.length < 2) {
+      _predictions = [];
+      _isSearching = false;
+      notifyListeners();
+      return;
+    }
 
-  void updateDestination({required String destination}) {
-    destinationController.text = destination;
+    _isSearching = true;
+    notifyListeners();
+
+    if (_accessToken == null) {
+      print("Error searching places: ApiService or accessToken is null.");
+      _predictions = [];
+      _isSearching = false;
+      notifyListeners();
+      return;
+    }
+
+    if (_sessionToken == null) {
+      _sessionToken = Uuid().v4();
+    }
+
+    try {
+      final result = await _apiService.searchPlacesProxy(
+        accessToken: _accessToken,
+        query: query,
+        sessiontoken: _sessionToken!,
+      );
+      _predictions = result;
+    } catch (e) {
+      print("Error searching places: $e");
+      _predictions = [];
+    }
+
+    _isSearching = false;
     notifyListeners();
   }
 
-  void setDestination({required LatLng coordinates}) {
-    destinationCoordinates = coordinates;
+  Future<void> getPlaceDetails(String placeId) async {
+    if (_accessToken == null || _sessionToken == null) {
+      print("Error getting place details: ApiService, accessToken, or sessionToken is null.");
+      return;
+    }
+
+    try {
+      // FIX 1: Removed the outdated 'vehicleType' parameter.
+      final result = await _apiService.getPlaceDetailsProxy(
+        accessToken: _accessToken,
+        placeId: placeId,
+        sessiontoken: _sessionToken!,
+      );
+
+      destinationCoordinates = LatLng(result['lat'], result['lng']);
+      destinationController.text = result['name'];
+      _predictions = [];
+      _sessionToken = null;
+
+      // --- NEW LOGIC STARTS HERE ---
+
+      // 1. Add a temporary marker for the selected destination
+      // This will now add a draggable marker
+      _addAnimatedDestinationMarker();
+
+
+      // --- NEW, FOCUSED CAMERA ANIMATION ---
+      if (destinationCoordinates != null) {
+        // This will animate the camera to center directly on the
+        // destination and zoom in to a comfortable level (e.g., 17.0).
+        _mapController?.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: destinationCoordinates!,
+              zoom: 17.0, // A good zoom level for city streets
+            ),
+          ),
+        );
+      }
+      // --- END OF NEW LOGIC ---
+
+      // Keep the UI on destination selection so the user can confirm
+      // the destination before proceeding to vehicle selection.
+      show = Show.CONFIRMATION_SELECTION;
+
+      // FIX 2: Added the missing call to notify listeners.
+      notifyListeners();
+
+    } catch (e) {
+      print("Error getting place details: $e");
+    }
+  }
+
+  // --- NEW METHOD: To add the animated and draggable marker ---
+  void _addAnimatedDestinationMarker() {
+    if (destinationCoordinates == null) return;
+
+    // Calculate the offset for the bounce animation
+    final bounceValue = _bounceAnimation?.value ?? 0;
+    final markerOffset = Offset(0, -20 * bounceValue);
+
+    _markers.removeWhere((m) => m.markerId.value == DESTINATION_MARKER_ID);
+    _markers.add(
+      Marker(
+        markerId: const MarkerId(DESTINATION_MARKER_ID),
+        position: destinationCoordinates!,
+        icon: endIcon,
+        infoWindow: InfoWindow(title: destinationController.text),
+        draggable: true, // <-- MAKE THE MARKER DRAGGABLE
+        anchor: markerOffset, // Apply the bounce animation offset
+        onDragEnd: (newPosition) { // <-- HANDLE DRAG END
+          _onMarkerDragged(newPosition);
+        },
+      ),
+    );
+
+    // Start the bounce animation
+    _bounceController?.forward(from: 0.0);
     notifyListeners();
+  }
+
+  // --- NEW METHOD: To handle what happens after dragging ---
+  Future<void> _onMarkerDragged(LatLng newPosition) async {
+    destinationCoordinates = newPosition;
+
+    // Perform reverse geocoding to get the new address
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+          newPosition.latitude, newPosition.longitude);
+      if (placemarks.isNotEmpty) {
+        final p = placemarks.first;
+        // Construct a readable address and update the text field
+        final street = p.thoroughfare?.isNotEmpty == true ? '${p.thoroughfare}, ' : '';
+        final locality = p.locality?.isNotEmpty == true ? '${p.locality}, ' : '';
+        final country = p.country ?? '';
+        destinationController.text = '$street$locality$country'.trim().replaceAll(RegExp(r',$'), '');
+      } else {
+        destinationController.text = "Unnamed Location";
+      }
+    } catch (e) {
+      print("Error during reverse geocoding: $e");
+      destinationController.text = "Unknown Location";
+    }
+
+    // You might want to re-fetch the route and estimate after dragging
+    // For now, we just update the state
+    notifyListeners();
+  }
+  void clearPredictions() {
+    destinationController.text = '';
+    _predictions = [];
+    _sessionToken = null;
+    notifyListeners();
+  }
+
+  Future<void> _loadCustomMarkers() async {
+    carIcon = await _bitmapDescriptorFromAsset(Images.carTop, width: 30, height: 30);
+    markerIcon = await _bitmapDescriptorFromAsset(Images.location, width: 30, height: 30);
+    startIcon = await _bitmapDescriptorFromAsset(Images.location, width: 30, height: 30);
+    endIcon =
+    await _bitmapDescriptorFromAsset(Images.mapLocationIcon, width: 100, height: 100);
+    addressIcon =
+    await _bitmapDescriptorFromAsset(Images.mapLocationIcon, width: 100, height: 100);
+  }
+
+  Future<BitmapDescriptor> _bitmapDescriptorFromAsset(String asset,
+      {required int width, required int height}) async {
+    final data = await rootBundle.load(asset);
+    final codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+      targetWidth: width,
+      targetHeight: height,
+    );
+    final frame = await codec.getNextFrame();
+    final byteData = await frame.image.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData == null) {
+      return BitmapDescriptor.defaultMarker;
+    }
+    return BitmapDescriptor.bytes(byteData.buffer.asUint8List());
   }
 }

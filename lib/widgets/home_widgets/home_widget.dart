@@ -10,7 +10,6 @@ import '../../screens/home.dart';
 import '../../screens/parcels/parcel_page.dart';
 import '../../utils/dimensions.dart';
 import '../driver_map.dart';
-import '../loading_widgets/loading_location.dart';
 import 'banner_view.dart';
 import 'home_search_screen.dart';
 
@@ -40,13 +39,9 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
     UserProvider userProvider = Provider.of<UserProvider>(context);
     final locationProvider =
         Provider.of<LocationProvider>(context, listen: true);
-    final position = locationProvider.currentPosition;
     final address = locationProvider.locationAddress;
 
-    if (position == null) {
-      locationProvider.fetchLocation();
-      return LoadingLocationScreen();
-    }
+
     return Container(
       color: Colors.grey[200],
       child: RefreshIndicator(
@@ -130,6 +125,10 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           _buildMenuButton("Go Moto", Images.bike, () {
+
+
+            // 2. Pre-select the vehicle type
+            locationProvider.selectVehicle('motorbike');
             locationProvider.show = Show.DESTINATION_SELECTION;
             changeScreen(context, HomePage());
           }),
@@ -137,6 +136,10 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
             width: Dimensions.paddingSize,
           ),
           _buildMenuButton("Car", Images.car, () {
+
+            // 2. Pre-select the vehicle type
+            locationProvider.selectVehicle('sedan');
+
             locationProvider.show = Show.DESTINATION_SELECTION;
             changeScreen(context, HomePage());
           }),

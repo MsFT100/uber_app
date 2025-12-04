@@ -1,6 +1,7 @@
 import 'package:BucoRide/providers/location_provider.dart';
 
 import 'package:BucoRide/widgets/trip_widgets/Searching_for_drivers.dart';
+import 'package:BucoRide/widgets/trip_widgets/vehicle_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +11,6 @@ import '../helpers/constants.dart';
 import '../helpers/style.dart';
 import '../widgets/trip_widgets/destination_selection.dart';
 import '../widgets/trip_widgets/driver_found.dart';
-import '../widgets/trip_widgets/payment_method_selection.dart';
 import '../widgets/trip_widgets/pickup_selection_widget.dart';
 import '../widgets/trip_draggable.dart';
 import 'map.dart';
@@ -108,12 +108,11 @@ class _HomePageState extends State<HomePage> {
               scaffoldState: _homeScaffoldKey,
             ),
           ),
-          //  ANCHOR Draggable PAYMENT METHOD
+
+          //  ANCHOR Draggable VEHICLE SELECTION
           Visibility(
-              visible: locationProvider.show == Show.PAYMENT_METHOD_SELECTION,
-              child: PaymentMethodSelectionWidget(
-                scaffoldState: _homeScaffoldKey,
-              )),
+              visible: locationProvider.show == Show.VEHICLE_SELECTION,
+              child: VehicleSelectionWidget()),
           //  ANCHOR Draggable DRIVER
           Visibility(
               visible: locationProvider.show == Show.DRIVER_FOUND,

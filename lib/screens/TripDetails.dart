@@ -32,8 +32,7 @@ class _TripDetailsState extends State<TripDetails> {
   }
 
   _setupMap() async {
-    LocationProvider locationProvider =
-        Provider.of<LocationProvider>(context, listen: false);
+
 
     double pickuplat = widget.trip['position']['latitude'];
     double pickuplng = widget.trip['position']['longitude'];
@@ -43,8 +42,6 @@ class _TripDetailsState extends State<TripDetails> {
     LatLng pickupLocation = LatLng(pickuplat, pickuplng);
     LatLng destinationLocation = LatLng(destinationlat, destinationlng);
 
-    locationProvider.addTripHistoryMarkers(pickupLocation, destinationLocation);
-    locationProvider.addRiderRoutePolyline(pickupLocation, destinationLocation);
 
     LatLngBounds bounds = LatLngBounds(
       southwest: LatLng(

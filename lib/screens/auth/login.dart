@@ -1,9 +1,9 @@
+
 import 'package:BucoRide/helpers/constants.dart';
 import 'package:BucoRide/screens/auth/forgot_password.dart';
 import 'package:BucoRide/screens/auth/registration.dart';
-import 'package:BucoRide/screens/profile_page.dart';
-import 'package:BucoRide/widgets/loading_widgets/loading.dart';
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../helpers/screen_navigation.dart';
@@ -22,59 +22,61 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<UserProvider>(context);
+    // Changed from listen:true to listen:false. We don't want the whole page to rebuild.
+    // The buttons will listen for changes themselves.
+    final authProvider = Provider.of<UserProvider>(context, listen: false);
 
     return Scaffold(
       backgroundColor: AppConstants.lightPrimary,
-      body: authProvider.status == Status.Authenticating
-          ? Loading()
-          : SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: Dimensions.paddingSizeExtraLarge),
-                    Image.asset(Images.logoWithName, height: 75),
-                    const SizedBox(height: 8.0),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Welcome to ${AppConstants.appName}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColorLight,
-                            fontSize: 20.0,
-                          ),
-                        ),
-                        Image.asset(Images.hand, width: 40),
-                      ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: Dimensions.paddingSizeExtraLarge),
+              Image.asset(Images.logoWithName, height: 75),
+              const SizedBox(height: 8.0),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Welcome to ${AppConstants.appName}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).primaryColorLight,
+                      fontSize: 20.0,
                     ),
-                    const SizedBox(height: Dimensions.paddingSize),
-                    Text(
-                      'Please login to your account.',
-                      style: TextStyle(
-                        color: Theme.of(context).hintColor,
-                        fontSize: Dimensions.fontSizeSmall,
-                      ),
-                      maxLines: 2,
-                    ),
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.1),
-                    _buildTextField(authProvider.email, 'Email', Icons.email, false),
-                    _buildTextField(authProvider.password, 'Password', Icons.lock, true),
-                    const SizedBox(height: Dimensions.paddingSizeSmall),
-                    _buildLoginButton(authProvider),
-                    const SizedBox(height: Dimensions.paddingSizeSmall),
-                    _buildGoogleSignInButton(authProvider),
-                    const SizedBox(height: Dimensions.paddingSizeSmall),
-                    _buildForgotPasswordLink(context),
-                    const SizedBox(height: Dimensions.paddingSizeSmall),
-                    _buildRegisterLink(context),
-                  ],
-                ),
+                  ),
+                  Image.asset(Images.hand, width: 40),
+                ],
               ),
-            ),
+              const SizedBox(height: Dimensions.paddingSize),
+              Text(
+                'Please login to your account.',
+                style: TextStyle(
+                  color: Theme.of(context).hintColor,
+                  fontSize: Dimensions.fontSizeSmall,
+                ),
+                maxLines: 2,
+              ),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.1),
+              _buildTextField(authProvider.email, 'Email', Icons.email, false),
+              _buildTextField(authProvider.password, 'Password', Icons.lock, true),
+              const SizedBox(height: Dimensions.paddingSizeSmall),
+              // We pass the authProvider down to the button
+              _buildLoginButton(authProvider), // Pass only one instance of authProvider
+              const SizedBox(height: Dimensions.paddingSizeSmall),
+              _buildGoogleSignInButton(authProvider),
+              const SizedBox(height: Dimensions.paddingSizeSmall),
+              _buildForgotPasswordLink(context),
+              const SizedBox(height: Dimensions.paddingSizeSmall),
+              _buildRegisterLink(context),
+            ],
+          ),
+        ),
+      ),
+
     );
   }
 
@@ -99,56 +101,70 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // Corrected the method signature and added logic to disable the button while loading
   Widget _buildLoginButton(UserProvider authProvider) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () async {
-          String resultMessage = await authProvider.signIn();
-          if (resultMessage != "Success") {
-            showAppSnackBar(context, resultMessage, isError: true);
-          } else {
-            authProvider.clearController();
-            changeScreenReplacement(context, ProfileScreen());
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blueAccent,
-          shape: const StadiumBorder(),
-          padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall),
-        ),
-        child: Text(
-          'Log in',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
+    // Using a Consumer here to only rebuild the button when the status changes.
+    return Consumer<UserProvider>(
+      builder: (context, provider, child) {
+        bool isLoading = provider.status == Status.Authenticating;
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            // Disable button by setting onPressed to null when loading
+            onPressed: isLoading ? null : () async {
+              String resultMessage = await authProvider.signIn();
+              // Check if the widget is still mounted before showing UI
+              if (mounted && resultMessage != "Success") {
+                showAppSnackBar(context, resultMessage, isError: true);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              shape: const StadiumBorder(),
+              padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall),
+            ),
+            // Show a loading indicator inside the button
+            child: isLoading
+                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text(
+              'Log in',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        );
+      },
     );
   }
 
+  // Corrected the method and added logic to disable the button while loading
   Widget _buildGoogleSignInButton(UserProvider authProvider) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        icon: Image.asset(Images.google, width: 24),
-        label: Text(
-          'Sign in with Google',
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        onPressed: () async {
-          String resultMessage = await authProvider.signInWithGoogle();
-          if (resultMessage != "Success") {
-            showAppSnackBar(context, resultMessage, isError: true);
-          } else {
-            authProvider.clearController();
-            changeScreenReplacement(context, ProfileScreen());
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          shape: const StadiumBorder(),
-          padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall),
-        ),
-      ),
+    return Consumer<UserProvider>(
+      builder: (context, provider, child) {
+        bool isLoading = provider.status == Status.Authenticating;
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            icon: isLoading ? Container() : Image.asset(Images.google, width: 24), // Hide icon when loading
+            label: isLoading
+                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text(
+              'Sign in with Google',
+              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            ),
+            onPressed: isLoading ? null : () async {
+              String resultMessage = await authProvider.signInWithGoogle();
+              if (mounted && resultMessage != "Success") {
+                showAppSnackBar(context, resultMessage, isError: true);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              shape: const StadiumBorder(),
+              padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall),
+            ),
+          ),
+        );
+      },
     );
   }
 

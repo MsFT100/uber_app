@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
@@ -50,13 +51,18 @@ class ApiService {
       final url = Uri.parse('$_baseUrl/api/riders/login');
       debugPrint('Logging in with URL: $url');
 
+
+      // This is the request body that will be sent.
+      final requestBody = jsonEncode({'fcmToken': fcmToken});
+      debugPrint('Request Body: $requestBody'); // Logging the actual body being sent.
+
       final response = await http.post(
         url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $firebaseToken',
         },
-        body: jsonEncode({'fcmToken': fcmToken}),
+        body: requestBody,
       );
 
       final responseBody = jsonDecode(response.body);
@@ -180,4 +186,172 @@ class ApiService {
       rethrow;
     }
   }
+
+    Future<Map<String, dynamic>> initiateMpesaStkPush({
+    required String accessToken,
+    required int tripId,
+    required String phone,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/api/payments/mpesa/stk-push');
+      debugPrint('Initiating STK push with URL: $url');
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({
+          'tripId': tripId,
+          'phone': phone,
+        }),
+      );
+
+      final responseBody = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        debugPrint('STK push initiated successfully: $responseBody');
+        return responseBody;
+      } else {
+        debugPrint('Failed to initiate STK push: ${response.body}');
+        throw Exception(responseBody['error'] ?? 'Failed to initiate STK push.');
+      }
+    } catch (e) {
+      debugPrint('An error occurred during STK push initiation: $e');
+      rethrow;
+    }
+  }
+
+  // Methods for Places API via proxy
+
+  Future<List<dynamic>> searchPlacesProxy({
+    required String accessToken,
+    required String query,
+    required String sessiontoken,
+  }) async {
+    final uri =
+        Uri.parse('$_baseUrl/api/maps/search-places').replace(queryParameters: {
+      'input': query,
+      'sessiontoken': sessiontoken,
+    });
+    debugPrint('Searching places with URL: $uri');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $accessToken',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final responseBody = jsonDecode(response.body);
+      return responseBody['predictions'] as List<dynamic>;
+    } else {
+      throw Exception(
+          'Failed to search places. Status: ${response.statusCode}, Body: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> getPlaceDetailsProxy({
+    required String accessToken,
+    required String placeId,
+    required String sessiontoken,
+  }) async {
+    final uri =
+        Uri.parse('$_baseUrl/api/maps/place-details').replace(queryParameters: {
+      'placeId': placeId,
+      'sessiontoken': sessiontoken,
+    });
+    debugPrint('Getting place details with URL: $uri');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $accessToken',
+      },
+    );
+
+    debugPrint('Place Details Response: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final responseBody = jsonDecode(response.body);
+      return responseBody['details'] as Map<String, dynamic>;
+    } else {
+      throw Exception(
+          'Failed to get place details. Status: ${response.statusCode}, Body: ${response.body}');
+    }
+  }
+
+  // ... (other methods like loginRider, registerRider, etc. are fine)
+
+  Future<Map<String, dynamic>?> getDirectionsProxy({
+    required String accessToken,
+    required LatLng origin,
+    required LatLng destination,
+    // REMOVED: No longer need vehicleType here
+    // required String vehicleType,
+  }) async {
+    final uri =
+    Uri.parse('$_baseUrl/api/maps/directions').replace(queryParameters: {
+      'originLat': origin.latitude.toString(),
+      'originLng': origin.longitude.toString(),
+      'destinationLat': destination.latitude.toString(),
+      'destinationLng': destination.longitude.toString(),
+      // REMOVED: 'vehicleType': vehicleType,
+    });
+    debugPrint('Getting directions with URL: $uri');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $accessToken',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final responseBody = jsonDecode(response.body);
+      return responseBody['route'] as Map<String, dynamic>?;
+    } else {
+      throw Exception(
+          'Failed to get directions. Status: ${response.statusCode}, Body: ${response.body}');
+    }
+  }
+
+  // ADDED: New method for the dedicated fare estimation endpoint
+  Future<Map<String, dynamic>> getFareEstimate({
+    required String accessToken,
+    required LatLng pickup,
+    required LatLng dropoff,
+  }) async {
+    final url = Uri.parse('$_baseUrl/api/trips/estimate');
+    debugPrint('Getting fare estimate with URL: $url');
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode({
+        'pickup': {'lat': pickup.latitude, 'lng': pickup.longitude},
+        'dropoff': {'lat': dropoff.latitude, 'lng': dropoff.longitude},
+      }),
+    );
+
+    final responseBody = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      debugPrint('Fare estimate successful: $responseBody');
+      return responseBody['data'] as Map<String, dynamic>;
+    } else {
+      debugPrint('Failed to get fare estimate: ${response.body}');
+      throw Exception(responseBody['error'] ?? 'Failed to get fare estimate.');
+    }
+  }
 }
+
+
