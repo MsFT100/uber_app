@@ -2,6 +2,7 @@
 import 'package:BucoRide/helpers/constants.dart';
 import 'package:BucoRide/screens/auth/forgot_password.dart';
 import 'package:BucoRide/screens/auth/registration.dart';
+import 'package:BucoRide/services/permmsions_service.dart';
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
@@ -20,6 +21,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final PermissionsService _permissionsService = PermissionsService();
+
   @override
   Widget build(BuildContext context) {
     // Changed from listen:true to listen:false. We don't want the whole page to rebuild.
@@ -112,6 +115,8 @@ class _LoginScreenState extends State<LoginScreen> {
           child: ElevatedButton(
             // Disable button by setting onPressed to null when loading
             onPressed: isLoading ? null : () async {
+              await _permissionsService.requestNotificationPermission();
+
               String resultMessage = await authProvider.signIn();
               // Check if the widget is still mounted before showing UI
               if (mounted && resultMessage != "Success") {
@@ -152,6 +157,8 @@ class _LoginScreenState extends State<LoginScreen> {
               style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
             ),
             onPressed: isLoading ? null : () async {
+              await _permissionsService.requestNotificationPermission();
+
               String resultMessage = await authProvider.signInWithGoogle();
               if (mounted && resultMessage != "Success") {
                 showAppSnackBar(context, resultMessage, isError: true);

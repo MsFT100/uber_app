@@ -25,18 +25,30 @@ class AppStateProvider with ChangeNotifier {
     // Initialization logic can go here
   }
 
+  // This is the entry point for push notifications
   void handlePushNotification(Map<String, dynamic> data) {
     final type = data['type'];
-    final tripId = data['tripId'];
+    final tripId = data['tripId']?.toString(); // Ensure tripId is a String
+
+    if (tripId == null) {
+      debugPrint("Notification received without a tripId.");
+      return;
+    }
 
     switch (type) {
+    // --- THE FIX: These notification types all trigger a UI update ---
       case 'DRIVER_ACCEPTED':
-      case 'TRIP_UPDATE':
-        if (tripId != null) {
-          _fetchTripDetails(tripId);
-        }
+      case 'DRIVER_CANCELLED':
+      case 'NO_DRIVERS_FOUND':
+        debugPrint("Handling 'NO_DRIVERS_FOUND' notification.");
         break;
-      // Handle other notification types
+      case 'TRIP_UPDATE': // Generic update
+        debugPrint("Handling '$type' notification for tripId: $tripId");
+        _fetchTripDetails(tripId);
+        break;
+    // Handle other notification types as needed
+      default:
+        debugPrint("Received unhandled notification type: $type");
     }
   }
 
@@ -49,38 +61,45 @@ class AppStateProvider with ChangeNotifier {
         .listen((snapshot) {
       if (snapshot.exists) {
         _currentTrip = Trip.fromFirestore(snapshot);
-        if (_currentTrip!.driverId != null) {
-          // Assuming you have a way to fetch driver details by ID
-          _fetchDriverDetails(_currentTrip!.driverId!);
+        debugPrint("Trip data updated from Firestore. New status: ${_currentTrip?.status}");
+
+        // --- THE FIX: PARSE DRIVER DATA DIRECTLY FROM THE TRIP ---
+        // Your backend adds a 'driver' map to the trip document.
+        final tripData = snapshot.data() as Map<String, dynamic>;
+        if (tripData.containsKey('driver') && tripData['driver'] != null) {
+          // If the 'driver' field exists and is not null, parse it.
+          _driver = Driver.fromMap(tripData['driver'] as Map<String, dynamic>);
+        } else {
+          // If the driver cancels or is not assigned, ensure the local driver object is null.
+          _driver = null;
         }
+        // --- END OF FIX ---
+
       } else {
         _clearTripState();
       }
+      // This is the most important call. It will trigger all listeners in the UI.
       notifyListeners();
     });
-  }
-
-  Future<void> _fetchDriverDetails(String driverId) async {
-    // This is a placeholder. You need to implement fetching driver details
-    // from your backend or another Firestore collection.
-    // For now, we'll create a dummy driver.
-    try {
-      // Example: final driverData = await _apiService.getDriver(driverId);
-      // _driver = Driver.fromMap(driverData);
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error fetching driver details: $e');
-    }
   }
 
   Future<void> requestNewTrip(Trip trip, String accessToken) async {
     try {
       final tripData = await _apiService.requestTrip(
         accessToken: accessToken,
+        vehicleType: trip.vehicleType,
         pickup: {'lat': trip.pickup.latitude, 'lng': trip.pickup.longitude},
         dropoff: {'lat': trip.destination.latitude, 'lng': trip.destination.longitude},
       );
-      _fetchTripDetails(tripData['id']);
+
+      final dynamic tripDetails = tripData['trip'];
+      if (tripDetails != null && tripDetails['id'] != null) {
+        final String tripId = tripDetails['id'].toString();
+        _fetchTripDetails(tripId);
+      } else {
+        throw Exception("Trip ID was not found in the server response.");
+      }
+      // --- END OF FIX ---
     } catch (e) {
       debugPrint('Error requesting trip: $e');
       rethrow;

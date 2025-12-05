@@ -169,6 +169,7 @@ When a rider selects a pickup and dropoff location, the app should fetch both th
     ```json
     {
         "tripType": "ride", // or "parcel"
+        "vehicleType": "sedan", // e.g., "motorbike", "sedan", "suv", "van"
         "pickup": {
             "address": "123 ABC Street, Nairobi",
             "lat": -1.286389,
@@ -290,25 +291,6 @@ Once a trip is completed, the rider can pay for it using Mpesa.
     }
     ```
 
-#### Payment Status Notifications
-
-After initiating an STK push, the rider will receive push notifications for payment outcomes:
-
-*   **Payment Success Notification:**
-    *   **Title:** "Payment Received"
-    *   **Body:** `Thank you! Your payment of KES {amount} for trip #{tripId} was successful.`
-    *   **Data:** `{ "type": "TRIP_PAYMENT_SUCCESS", "tripId": "123" }`
-
-*   **Payment Cancelled Notification:**
-    *   **Title:** "Payment Cancelled"
-    *   **Body:** "You cancelled the payment for this trip. Please try again when ready."
-    *   **Data:** `{ "type": "TRIP_PAYMENT_FAILED", "tripId": "123", "resultCode": 1032 }`
-
-*   **Payment Failed Notification:**
-    *   **Title:** "Payment Failed"
-    *   **Body:** `Trip payment failed: {error_description}`
-    *   **Data:** `{ "type": "TRIP_PAYMENT_FAILED", "tripId": "123", "resultCode": "{result_code}" }`
-
 ### Real-time Trip Updates (Rider)
 
 *   **Method:** Use the **Firestore SDK** to listen for changes on a specific trip document.
@@ -338,16 +320,16 @@ When `status` is `accepted` (or any subsequent state before completion/cancellat
 
 ```json
 {
-    "id": 5,
-    "uid": "firebase_user_id_string",
-    "name": "Driver Dan",
-    "rating": 4.8,
-    "profilePhotoUrl": "https://storage.googleapis.com/...",
-    "vehicle": {
-        "model": "Toyota Vitz",
-        "color": "Silver",
-        "numberPlate": "KDA 123B"
-    }
+  "id": 5,
+  "uid": "firebase_user_id_string",
+  "name": "Driver Dan",
+  "rating": 4.8,
+  "profilePhotoUrl": "https://storage.googleapis.com/...",
+  "vehicle": {
+    "model": "Toyota Vitz",
+    "color": "Silver",
+    "numberPlate": "KDA 123B"
+  }
 }
 ```
 

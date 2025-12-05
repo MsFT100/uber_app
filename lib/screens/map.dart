@@ -2,7 +2,7 @@ import 'package:BucoRide/helpers/screen_navigation.dart';
 import 'package:BucoRide/providers/location_provider.dart';
 import 'package:BucoRide/screens/menu.dart';
 import 'package:BucoRide/screens/parcels/parcel_page.dart';
-import 'package:BucoRide/utils/app_constants.dart';
+import 'package:BucoRide/widgets/trip_widgets/destination_confirmation_controls.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -47,8 +47,16 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           return Center(child: Text('Error initializing location: ${snapshot.error}'));
         }
 
+
+
+
         return Consumer<LocationProvider>(
           builder: (context, locationProvider, child) {
+
+            // THE FIX: Determine if gestures should be enabled based on the UI state.
+            bool isConfirmingDestination = locationProvider.show == Show.CONFIRMATION_SELECTION;
+
+
             final position = locationProvider.currentPosition;
 
             if (position == null) {
@@ -117,8 +125,15 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     },
                   ),
 
-                  if (locationProvider.destinationCoordinates != null)
-                    _buildRideRequestButton(context, locationProvider),
+                  // --- NEW DRAG LOGIC ---
+                  // Show a central pin icon ONLY when confirming destination
+                  if (isConfirmingDestination)
+                    _buildCenterDragPin(),
+
+
+                  // --- FIX 2: USE THE NEW WIDGET ---
+                  if (locationProvider.show == Show.CONFIRMATION_SELECTION)
+                    const DestinationConfirmationControls(),
                 ],
               ),
             );
@@ -128,37 +143,24 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildRideRequestButton(BuildContext context, LocationProvider locationProvider) {
-    return Positioned(
-      bottom: 30,
-      left: 20,
-      right: 20,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.lightPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 5,
-        ),
-        onPressed: () async {
-          // Wait for route & estimate to be fetched, then show vehicle selection
-          await locationProvider.getRouteAndEstimate();
-          locationProvider.show = Show.VEHICLE_SELECTION;
-        },
-        child: Text(
-          'Confirm Destination',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+
+  // --- NEW WIDGET for the central pin ---
+  Widget _buildCenterDragPin() {
+    return IgnorePointer(
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Drag map to adjust location", style: TextStyle(color: Colors.white, backgroundColor: Colors.black54, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Icon(Icons.location_pin, color: Colors.red, size: 50),
+            // This is just a visual cue. The actual position is the center of the map.
+            const SizedBox(height: 50), // Adjust this to put the pin's tip at the map center
+          ],
         ),
       ),
     );
   }
-
   @override
   void dispose() {
     destinationController.dispose();

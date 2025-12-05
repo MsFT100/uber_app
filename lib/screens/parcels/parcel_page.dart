@@ -26,7 +26,7 @@ class _ParcelPageState extends State<ParcelPage> {
   final _destinationController = TextEditingController();
 
   String? _selectedParcelType = 'Standard';
-  String? _selectedVehicleType = 'Moto Express';
+  String _selectedVehicleType = 'Moto Express';
   LatLng? _destinationLatLng;
 
   final List<String> _parcelTypes = ['Standard', 'Medium Package', 'Large Package'];
@@ -69,7 +69,7 @@ class _ParcelPageState extends State<ParcelPage> {
               _buildSectionTitle('Delivery Details'),
               _buildDestinationSearch(),
               const SizedBox(height: 12),
-              _buildDropdown(_vehicleTypes, 'Vehicle Type', _selectedVehicleType, (val) => setState(() => _selectedVehicleType = val)),
+              _buildDropdown(_vehicleTypes, 'Vehicle Type', _selectedVehicleType, (val) => setState(() => _selectedVehicleType = val!)),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _submitForm,
@@ -108,7 +108,7 @@ class _ParcelPageState extends State<ParcelPage> {
     }
 
     final trip = Trip(
-      userId: userProvider.user!.uid,
+      riderId: userProvider.user!.uid,
       type: TripType.parcel,
       pickup: pickupLatLng,
       pickupAddress: pickupAddress,

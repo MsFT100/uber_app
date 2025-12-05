@@ -1,6 +1,6 @@
 import 'package:BucoRide/providers/location_provider.dart';
 
-import 'package:BucoRide/widgets/trip_widgets/Searching_for_drivers.dart';
+import 'package:BucoRide/widgets/trip_widgets/searching_for_drivers.dart';
 import 'package:BucoRide/widgets/trip_widgets/vehicle_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

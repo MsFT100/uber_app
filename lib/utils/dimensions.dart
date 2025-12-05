@@ -45,4 +45,6 @@ class Dimensions {
   static const double weatherIconSize = 60;
   static const double buttonSize = 40;
   static const double couponIconSize = 40;
+
+  static const double iconSizeOverLarge = 40;
 }

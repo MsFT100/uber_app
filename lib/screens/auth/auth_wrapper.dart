@@ -21,8 +21,7 @@ class AuthWrapper extends StatelessWidget {
       case Status.Authenticated:
         return HomePage();
       case Status.Unauthenticated:
-      default:
-        return LoginScreen();
+      return LoginScreen();
     }
   }
 }

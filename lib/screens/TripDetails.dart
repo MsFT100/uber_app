@@ -40,7 +40,6 @@ class _TripDetailsState extends State<TripDetails> {
     double destinationlng = widget.trip['destination']['longitude'];
 
     LatLng pickupLocation = LatLng(pickuplat, pickuplng);
-    LatLng destinationLocation = LatLng(destinationlat, destinationlng);
 
 
     LatLngBounds bounds = LatLngBounds(

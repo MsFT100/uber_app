@@ -277,7 +277,6 @@ class LocationProvider with ChangeNotifier {
       position: position,
       icon: markerIcon,
     ));
-    notifyListeners();
   }
 
   void selectVehicle(String vehicleType) {
@@ -480,7 +479,6 @@ class LocationProvider with ChangeNotifier {
     }
 
     try {
-      // FIX 1: Removed the outdated 'vehicleType' parameter.
       final result = await _apiService.getPlaceDetailsProxy(
         accessToken: _accessToken,
         placeId: placeId,
@@ -492,33 +490,13 @@ class LocationProvider with ChangeNotifier {
       _predictions = [];
       _sessionToken = null;
 
-      // --- NEW LOGIC STARTS HERE ---
-
-      // 1. Add a temporary marker for the selected destination
-      // This will now add a draggable marker
+      // 1. Add the animated draggable marker
       _addAnimatedDestinationMarker();
 
+      // 2. Ensure camera animates smoothly to center the destination
+      _animateCameraToDestination();
 
-      // --- NEW, FOCUSED CAMERA ANIMATION ---
-      if (destinationCoordinates != null) {
-        // This will animate the camera to center directly on the
-        // destination and zoom in to a comfortable level (e.g., 17.0).
-        _mapController?.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: destinationCoordinates!,
-              zoom: 17.0, // A good zoom level for city streets
-            ),
-          ),
-        );
-      }
-      // --- END OF NEW LOGIC ---
-
-      // Keep the UI on destination selection so the user can confirm
-      // the destination before proceeding to vehicle selection.
       show = Show.CONFIRMATION_SELECTION;
-
-      // FIX 2: Added the missing call to notify listeners.
       notifyListeners();
 
     } catch (e) {
@@ -526,7 +504,24 @@ class LocationProvider with ChangeNotifier {
     }
   }
 
-  // --- NEW METHOD: To add the animated and draggable marker ---
+// --- NEW METHOD: Smooth camera animation to destination ---
+  Future<void> _animateCameraToDestination() async {
+    if (destinationCoordinates == null || _mapController == null) return;
+
+    final targetZoom = 17.0; // Comfortable zoom level for streets
+
+    // Animate camera smoothly
+    _mapController!.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: destinationCoordinates!,
+          zoom: targetZoom,
+          bearing: 0,
+          tilt: 45, // Slight tilt for better view (optional)
+        ),
+      ),
+    );
+  }
   void _addAnimatedDestinationMarker() {
     if (destinationCoordinates == null) return;
 
@@ -534,29 +529,82 @@ class LocationProvider with ChangeNotifier {
     final bounceValue = _bounceAnimation?.value ?? 0;
     final markerOffset = Offset(0, -20 * bounceValue);
 
+    // Clear any existing destination markers
     _markers.removeWhere((m) => m.markerId.value == DESTINATION_MARKER_ID);
+
+    // Add the current location marker (if not already present)
+    if (!_markers.any((m) => m.markerId.value == LOCATION_MARKER_ID)) {
+      _markers.add(Marker(
+        markerId: MarkerId(LOCATION_MARKER_ID),
+        position: _center,
+        icon: startIcon,
+      ));
+    }
+
+    // Add the draggable destination marker
     _markers.add(
       Marker(
         markerId: const MarkerId(DESTINATION_MARKER_ID),
         position: destinationCoordinates!,
         icon: endIcon,
-        infoWindow: InfoWindow(title: destinationController.text),
-        draggable: true, // <-- MAKE THE MARKER DRAGGABLE
-        anchor: markerOffset, // Apply the bounce animation offset
-        onDragEnd: (newPosition) { // <-- HANDLE DRAG END
+        infoWindow: InfoWindow(
+          title: destinationController.text,
+          snippet: 'Drag to adjust location',
+        ),
+        draggable: true,
+        anchor: markerOffset,
+        onDragStart: (position) {
+          // Optional: Provide haptic feedback when dragging starts
+          HapticFeedback.selectionClick();
+        },
+        onDrag: (position) {
+          // Optional: Update in real-time while dragging
+          // _onMarkerDragging(position);
+        },
+        onDragEnd: (newPosition) {
           _onMarkerDragged(newPosition);
+          // Re-animate camera to new position
+          _animateCameraToMarker(newPosition);
         },
       ),
     );
 
-    // Start the bounce animation
+    // Start bounce animation
     _bounceController?.forward(from: 0.0);
     notifyListeners();
+  }
+
+// --- NEW: Camera animation after marker is dragged ---
+  Future<void> _animateCameraToMarker(LatLng position) async {
+    if (_mapController == null) return;
+
+    _mapController!.animateCamera(
+      CameraUpdate.newLatLng(position),
+    );
   }
 
   // --- NEW METHOD: To handle what happens after dragging ---
   Future<void> _onMarkerDragged(LatLng newPosition) async {
     destinationCoordinates = newPosition;
+
+
+    // THE FIX: We need to manually update the marker's position in the _markers set
+    // before calling notifyListeners(). This forces the marker to redraw at the new spot.
+    _markers.removeWhere((m) => m.markerId.value == DESTINATION_MARKER_ID);
+    _markers.add(
+      Marker(
+        markerId: const MarkerId(DESTINATION_MARKER_ID),
+        position: newPosition,
+        icon: endIcon,
+        infoWindow: const InfoWindow(title: "Adjusting..."), // Give feedback
+        draggable: true,
+        onDragEnd: (pos) => _onMarkerDragged(pos), // Re-assign the drag handler
+      ),
+    );
+    notifyListeners(); // Update the UI to show the moved marker
+
+    // Now, perform the reverse geocoding to update the address text.
+    // This can happen after the UI has updated.
 
     // Perform reverse geocoding to get the new address
     try {

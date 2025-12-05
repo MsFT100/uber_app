@@ -15,15 +15,15 @@ enum TripStatus {
   cancelled_by_rider,
   no_drivers_found,
   pending,
-  arriving
+  arriving,
 }
 
 class Trip {
   final String? id;
-  final String userId;
+  final String riderId;
   final String? driverId;
   final TripType type;
-  final TripStatus status;
+  late final TripStatus status;
 
   final LatLng pickup;
   final String pickupAddress;
@@ -40,11 +40,11 @@ class Trip {
   final String? recipientContact;
   final double? weight;
   final String? parcelType;
-  final String? vehicleType;
+  final String vehicleType;
 
   Trip({
     this.id,
-    required this.userId,
+    required this.riderId,
     this.driverId,
     required this.type,
     this.status = TripStatus.pending,
@@ -52,6 +52,7 @@ class Trip {
     required this.pickupAddress,
     required this.destination,
     required this.destinationAddress,
+    required this.vehicleType,
     this.price,
     this.createdAt,
     // Parcel-specific
@@ -61,37 +62,64 @@ class Trip {
     this.recipientContact,
     this.weight,
     this.parcelType,
-    this.vehicleType,
+
   });
 
+
+
   factory Trip.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+    // --- SAFER PARSING LOGIC ---
+
+    // Helper to safely parse LatLng, checking for both direct lat/lng and GeoPoint
+    LatLng _parseLatLng(Map<String, dynamic>? pointData) {
+      if (pointData == null) return const LatLng(0, 0);
+
+      if (pointData['lat'] is num && pointData['lng'] is num) {
+        return LatLng((pointData['lat'] as num).toDouble(), (pointData['lng'] as num).toDouble());
+      }
+      if (pointData['geopoint'] is GeoPoint) {
+        final geoPoint = pointData['geopoint'] as GeoPoint;
+        return LatLng(geoPoint.latitude, geoPoint.longitude);
+      }
+      return const LatLng(0, 0); // Default fallback
+    }
+
     return Trip(
       id: doc.id,
-      userId: data['userId'],
-      driverId: data['driverId'],
-      type: TripType.values.byName(data['type'] ?? 'ride'),
-      status: TripStatus.values.byName(data['status'] ?? 'pending'),
-      pickup: LatLng(data['pickup']['lat'], data['pickup']['lng']),
-      pickupAddress: data['pickupAddress'],
-      destination: LatLng(data['destination']['lat'], data['destination']['lng']),
-      destinationAddress: data['destinationAddress'],
-      price: (data['price'] as num?)?.toDouble(),
+      // FIX: Use null-aware operators (??) to provide default values and prevent crashes
+      riderId: data['riderId'] as String? ?? '',
+      driverId: data['driverId'] as String?,
+      type: TripType.values.byName(data['type'] as String? ?? 'ride'),
+      status: TripStatus.values.byName(data['status'] as String? ?? 'pending'),
+
+      // FIX: Use the safe parsing helper
+      pickup: _parseLatLng(data['pickup'] as Map<String, dynamic>?),
+      pickupAddress: data['pickupAddress'] as String? ?? 'Unknown Pickup',
+
+      // FIX: Use the safe parsing helper
+      destination: _parseLatLng(data['destination'] as Map<String, dynamic>?),
+      destinationAddress: data['destinationAddress'] as String? ?? 'Unknown Destination',
+
+      price: (data['estimated_fare'] as num?)?.toDouble() ?? (data['price'] as num?)?.toDouble(), // Check both possible keys
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-      // Parcel fields
-      senderName: data['senderName'],
-      senderContact: data['senderContact'],
-      recipientName: data['recipientName'],
-      recipientContact: data['recipientContact'],
+
+      // Parcel fields (already nullable, which is good)
+      senderName: data['senderName'] as String?,
+      senderContact: data['senderContact'] as String?,
+      recipientName: data['recipientName'] as String?,
+      recipientContact: data['recipientContact'] as String?,
       weight: (data['weight'] as num?)?.toDouble(),
-      parcelType: data['parcelType'],
-      vehicleType: data['vehicleType'],
+      parcelType: data['parcelType'] as String?,
+
+      // FIX: Provide a default value
+      vehicleType: data['vehicleType'] as String? ?? 'sedan',
     );
   }
-
   Map<String, dynamic> toMap() {
     return {
-      'userId': userId,
+      'riderId': riderId,
       'driverId': driverId,
       'type': type.name,
       'status': status.name,

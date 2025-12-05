@@ -88,6 +88,7 @@ class ApiService {
     required Map<String, dynamic> pickup,
     required Map<String, dynamic> dropoff,
     String tripType = 'ride',
+    required String vehicleType,
     Map<String, dynamic>? parcelDetails,
   }) async {
     try {
@@ -101,6 +102,7 @@ class ApiService {
           'Authorization': 'Bearer $accessToken',
         },
         body: jsonEncode({
+          'vehicleType': vehicleType,
           'tripType': tripType,
           'pickup': pickup,
           'dropoff': dropoff,
