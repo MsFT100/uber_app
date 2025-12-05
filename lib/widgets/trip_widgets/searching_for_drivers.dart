@@ -14,46 +14,55 @@ class SearchingForDrivers extends StatefulWidget {
 }
 
 class _SearchingForDriversState extends State<SearchingForDrivers>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
+    with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late AnimationController _rotateController;
   late Animation<double> _pulseAnimation;
   late Animation<double> _rotateAnimation;
   late Animation<double> _fadeAnimation;
+  late Animation<double> _noDriversFadeAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    _animationController = AnimationController(
+    // Controller for pulsing/breathing effects
+    _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
+    // Controller for continuous rotation
+    _rotateController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+
     _pulseAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
       CurvedAnimation(
-        parent: _animationController,
+        parent: _pulseController,
         curve: Curves.easeInOut,
       ),
     );
 
-    _rotateAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.linear,
-      ),
-    );
+    _rotateAnimation =
+        Tween<double>(begin: 0.0, end: 1.0).animate(_rotateController);
 
     _fadeAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
       CurvedAnimation(
-        parent: _animationController,
+        parent: _pulseController,
         curve: Curves.easeInOut,
       ),
     );
+
+    _noDriversFadeAnimation = Tween<double>(begin: 0.0, end: 1.0)
+        .animate(const AlwaysStoppedAnimation(1.0)); // Will be rebuilt
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _pulseController.dispose();
+    _rotateController.dispose();
     super.dispose();
   }
 
@@ -105,7 +114,13 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: status == TripStatus.no_drivers_found
-                          ? _buildNoDriversFoundUI(primaryColor)
+                          ? FadeTransition(
+                              opacity: _noDriversFadeAnimation =
+                                  Tween<double>(begin: 0.0, end: 1.0).animate(
+                                CurvedAnimation(parent: _pulseController, curve: Curves.easeIn),
+                              ),
+                              child: _buildNoDriversFoundUI(primaryColor),
+                            )
                           : _buildSearchingUI(primaryColor),
                     ),
                   ),
@@ -190,26 +205,28 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
         Stack(
           alignment: Alignment.center,
           children: [
-            // Outer ring
+            // New "Scanner" sweep effect
             AnimatedBuilder(
               animation: _rotateAnimation,
               builder: (context, child) {
                 return Transform.rotate(
                   angle: _rotateAnimation.value * 2 * 3.14159,
-                  child: child,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: SweepGradient(
+                        colors: [
+                          primaryColor.withOpacity(0.0),
+                          primaryColor.withOpacity(0.4),
+                        ],
+                        stops: const [0.0, 0.3],
+                      ),
+                    ),
+                  ),
                 );
               },
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: primaryColor.withAlpha(51),
-                    width: 3,
-                  ),
-                ),
-              ),
             ),
 
             // Middle ring
@@ -242,7 +259,7 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: primaryColor.withAlpha(77),
+                        color: primaryColor.withOpacity(0.3),
                         blurRadius: 15 * _pulseAnimation.value,
                         spreadRadius: 5 * _pulseAnimation.value,
                       ),

@@ -6,9 +6,11 @@ import 'package:flutter/foundation.dart';
 import '../models/driver.dart';
 import '../models/trip.dart';
 import '../services/api_service.dart';
+import 'location_provider.dart';
 
 class AppStateProvider with ChangeNotifier {
   final ApiService _apiService;
+  LocationProvider? _locationProvider; // Add a reference to LocationProvider
 
   StreamSubscription<DocumentSnapshot>? _tripSubscription;
 
@@ -18,9 +20,11 @@ class AppStateProvider with ChangeNotifier {
   Trip? get currentTrip => _currentTrip;
   Driver? get driver => _driver;
 
-  AppStateProvider({required ApiService apiService, String? accessToken})
-      : _apiService = apiService {
-    // Initialization logic can go here
+  AppStateProvider({required ApiService apiService}) : _apiService = apiService;
+
+  // Method to link providers
+  void setLocationProvider(LocationProvider provider) {
+    _locationProvider = provider;
   }
 
   // This is the entry point for push notifications
@@ -62,17 +66,18 @@ class AppStateProvider with ChangeNotifier {
         debugPrint(
             "Trip data updated from Firestore. New status: ${_currentTrip?.status}");
 
-        // --- THE FIX: PARSE DRIVER DATA DIRECTLY FROM THE TRIP ---
-        // Your backend adds a 'driver' map to the trip document.
+        // Parse driver data directly from the trip document
         final tripData = snapshot.data() as Map<String, dynamic>;
         if (tripData.containsKey('driver') && tripData['driver'] != null) {
-          // If the 'driver' field exists and is not null, parse it.
+          // If the 'driver' field exists, parse it.
           _driver = Driver.fromMap(tripData['driver'] as Map<String, dynamic>);
         } else {
-          // If the driver cancels or is not assigned, ensure the local driver object is null.
+          // If not, ensure the local driver object is null.
           _driver = null;
         }
-        // --- END OF FIX ---
+
+        // Notify LocationProvider to start its own listeners
+        _locationProvider?.listenToTrip(id);
       } else {
         _clearTripState();
       }

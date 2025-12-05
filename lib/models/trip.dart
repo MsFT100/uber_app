@@ -62,10 +62,7 @@ class Trip {
     this.recipientContact,
     this.weight,
     this.parcelType,
-
   });
-
-
 
   factory Trip.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
@@ -77,7 +74,8 @@ class Trip {
       if (pointData == null) return const LatLng(0, 0);
 
       if (pointData['lat'] is num && pointData['lng'] is num) {
-        return LatLng((pointData['lat'] as num).toDouble(), (pointData['lng'] as num).toDouble());
+        return LatLng((pointData['lat'] as num).toDouble(),
+            (pointData['lng'] as num).toDouble());
       }
       if (pointData['geopoint'] is GeoPoint) {
         final geoPoint = pointData['geopoint'] as GeoPoint;
@@ -89,9 +87,11 @@ class Trip {
     return Trip(
       id: doc.id,
       // FIX: Use null-aware operators (??) to provide default values and prevent crashes
-      riderId: data['riderId'] as String? ?? '',
+      riderId: data['riderId']?.toString() ??
+          '', // Firestore 'riderId' is a number, convert to String
       driverId: data['driverId'] as String?,
-      type: TripType.values.byName(data['type'] as String? ?? 'ride'),
+      type: TripType.values.byName(data['tripType'] as String? ??
+          'ride'), // Firestore field is 'tripType'
       status: TripStatus.values.byName(data['status'] as String? ?? 'pending'),
 
       // FIX: Use the safe parsing helper
@@ -99,10 +99,13 @@ class Trip {
       pickupAddress: data['pickupAddress'] as String? ?? 'Unknown Pickup',
 
       // FIX: Use the safe parsing helper
-      destination: _parseLatLng(data['destination'] as Map<String, dynamic>?),
-      destinationAddress: data['destinationAddress'] as String? ?? 'Unknown Destination',
+      destination: _parseLatLng(data['dropoff']
+          as Map<String, dynamic>?), // Firestore field is 'dropoff'
+      destinationAddress:
+          data['destinationAddress'] as String? ?? 'Unknown Destination',
 
-      price: (data['estimated_fare'] as num?)?.toDouble() ?? (data['price'] as num?)?.toDouble(), // Check both possible keys
+      price: double.tryParse(data['estimated_fare']?.toString() ??
+          '0.0'), // Firestore 'estimated_fare' is a string
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
 
       // Parcel fields (already nullable, which is good)
@@ -125,7 +128,10 @@ class Trip {
       'status': status.name,
       'pickup': {'lat': pickup.latitude, 'lng': pickup.longitude},
       'pickupAddress': pickupAddress,
-      'destination': {'lat': destination.latitude, 'lng': destination.longitude},
+      'destination': {
+        'lat': destination.latitude,
+        'lng': destination.longitude
+      },
       'destinationAddress': destinationAddress,
       'price': price,
       'createdAt': createdAt ?? FieldValue.serverTimestamp(),

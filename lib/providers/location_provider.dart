@@ -396,6 +396,12 @@ class LocationProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void stopListeningToTrip() {
+    _tripStreamSubscription?.cancel();
+    _tripStreamSubscription = null;
+    cancelRideRequest(); // This already resets the UI state
+  }
+
   List<LatLng> _decodePolyline(String encoded) {
     List<LatLng> points = [];
     int index = 0, len = encoded.length;

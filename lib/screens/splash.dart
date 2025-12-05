@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../utils/app_constants.dart';
 import '../utils/images.dart';
@@ -195,21 +196,19 @@ class _SplashScreenState extends State<SplashScreen>
                         opacity: _fadeAnimation.value,
                         child: Column(
                           children: [
-                            Text(
-                              'Effortless Rides, Every Time',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.5,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black
-                                        .withAlpha(77), // Replaced withOpacity
-                                    blurRadius: 4,
-                                    offset: const Offset(1, 1),
-                                  ),
-                                ],
+                            Shimmer.fromColors(
+                              baseColor: Colors.white,
+                              highlightColor: Colors.grey.shade400,
+                              period: const Duration(milliseconds: 2000),
+                              child: const Text(
+                                'Effortless Rides, Every Time',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.5,
+                                  // The color is now controlled by the shimmer effect
+                                ),
                               ),
                             ),
 
