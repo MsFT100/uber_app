@@ -167,7 +167,10 @@ class LocationProvider with ChangeNotifier {
         _addCurrentLocationMarker(_center);
       }
 
-      _currentPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      // FIX: Use LocationSettings instead of the deprecated desiredAccuracy
+      _currentPosition = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
       _center = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       _addCurrentLocationMarker(_center);
       await setLocationAddress();

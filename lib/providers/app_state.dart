@@ -9,8 +9,7 @@ import '../services/api_service.dart';
 
 class AppStateProvider with ChangeNotifier {
   final ApiService _apiService;
-  final String? _accessToken;
-  
+
   StreamSubscription<DocumentSnapshot>? _tripSubscription;
 
   Trip? _currentTrip;
@@ -20,48 +19,48 @@ class AppStateProvider with ChangeNotifier {
   Driver? get driver => _driver;
 
   AppStateProvider({required ApiService apiService, String? accessToken})
-      : _apiService = apiService,
-        _accessToken = accessToken {
+      : _apiService = apiService {
     // Initialization logic can go here
   }
 
   // This is the entry point for push notifications
   void handlePushNotification(Map<String, dynamic> data) {
     final type = data['type'];
-    final tripId = data['tripId']?.toString(); // Ensure tripId is a String
+    final id = data['id']?.toString();
 
-    if (tripId == null) {
+    if (id == null) {
       debugPrint("Notification received without a tripId.");
       return;
     }
 
     switch (type) {
-    // --- THE FIX: These notification types all trigger a UI update ---
       case 'DRIVER_ACCEPTED':
       case 'DRIVER_CANCELLED':
       case 'NO_DRIVERS_FOUND':
-        debugPrint("Handling 'NO_DRIVERS_FOUND' notification.");
+        debugPrint("Handling '$type' notification for tripId: $id");
+        _fetchTripDetails(id);
         break;
       case 'TRIP_UPDATE': // Generic update
-        debugPrint("Handling '$type' notification for tripId: $tripId");
-        _fetchTripDetails(tripId);
+        debugPrint("Handling '$type' notification for tripId: $id");
+        _fetchTripDetails(id);
         break;
-    // Handle other notification types as needed
+      // Handle other notification types as needed
       default:
         debugPrint("Received unhandled notification type: $type");
     }
   }
 
-  void _fetchTripDetails(String tripId) {
+  void _fetchTripDetails(String id) {
     _tripSubscription?.cancel();
     _tripSubscription = FirebaseFirestore.instance
         .collection('trips')
-        .doc(tripId)
+        .doc(id)
         .snapshots()
         .listen((snapshot) {
       if (snapshot.exists) {
         _currentTrip = Trip.fromFirestore(snapshot);
-        debugPrint("Trip data updated from Firestore. New status: ${_currentTrip?.status}");
+        debugPrint(
+            "Trip data updated from Firestore. New status: ${_currentTrip?.status}");
 
         // --- THE FIX: PARSE DRIVER DATA DIRECTLY FROM THE TRIP ---
         // Your backend adds a 'driver' map to the trip document.
@@ -74,7 +73,6 @@ class AppStateProvider with ChangeNotifier {
           _driver = null;
         }
         // --- END OF FIX ---
-
       } else {
         _clearTripState();
       }
@@ -89,13 +87,16 @@ class AppStateProvider with ChangeNotifier {
         accessToken: accessToken,
         vehicleType: trip.vehicleType,
         pickup: {'lat': trip.pickup.latitude, 'lng': trip.pickup.longitude},
-        dropoff: {'lat': trip.destination.latitude, 'lng': trip.destination.longitude},
+        dropoff: {
+          'lat': trip.destination.latitude,
+          'lng': trip.destination.longitude
+        },
       );
 
       final dynamic tripDetails = tripData['trip'];
       if (tripDetails != null && tripDetails['id'] != null) {
-        final String tripId = tripDetails['id'].toString();
-        _fetchTripDetails(tripId);
+        final String id = tripDetails['id'].toString();
+        _fetchTripDetails(id);
       } else {
         throw Exception("Trip ID was not found in the server response.");
       }
@@ -121,7 +122,8 @@ class AppStateProvider with ChangeNotifier {
     }
   }
 
-  Future<void> rateTrip(String tripId, int rating, String? comment, String accessToken) async {
+  Future<void> rateTrip(
+      String tripId, int rating, String? comment, String accessToken) async {
     try {
       await _apiService.rateTrip(
         tripId: tripId,

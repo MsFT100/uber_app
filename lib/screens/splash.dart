@@ -156,17 +156,20 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white
+                                  .withAlpha(26), // Replaced withOpacity
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black
+                                      .withAlpha(26), // Replaced withOpacity
                                   blurRadius: 20,
                                   spreadRadius: 5,
                                   offset: const Offset(0, 10),
                                 ),
                                 BoxShadow(
-                                  color: Colors.white.withOpacity(0.1),
+                                  color: Colors.white
+                                      .withAlpha(26), // Replaced withOpacity
                                   blurRadius: 10,
                                   spreadRadius: 2,
                                   offset: const Offset(0, -5),
@@ -201,7 +204,8 @@ class _SplashScreenState extends State<SplashScreen>
                                 letterSpacing: 0.5,
                                 shadows: [
                                   Shadow(
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: Colors.black
+                                        .withAlpha(77), // Replaced withOpacity
                                     blurRadius: 4,
                                     offset: const Offset(1, 1),
                                   ),
@@ -216,9 +220,11 @@ class _SplashScreenState extends State<SplashScreen>
                               SizedBox(
                                 width: 100,
                                 child: LinearProgressIndicator(
-                                  backgroundColor: Colors.white.withOpacity(0.2),
+                                  backgroundColor: Colors.white
+                                      .withAlpha(51), // Replaced withOpacity
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white.withOpacity(0.8),
+                                    Colors.white
+                                        .withAlpha(204), // Replaced withOpacity
                                   ),
                                   borderRadius: BorderRadius.circular(10),
                                 ),

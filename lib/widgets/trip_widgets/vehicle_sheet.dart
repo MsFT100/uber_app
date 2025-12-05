@@ -76,7 +76,7 @@ class _VehicleSelectionWidgetState extends State<VehicleSelectionWidget> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withAlpha(38),
                 blurRadius: 20,
                 spreadRadius: 5,
                 offset: const Offset(0, -2),
@@ -90,21 +90,21 @@ class _VehicleSelectionWidgetState extends State<VehicleSelectionWidget> {
             ),
             child: _isFetchingInitialEstimate
                 ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SpinKitThreeBounce(color: Colors.black, size: 30),
-                  SizedBox(height: 20),
-                  Text(
-                    'Calculating fares...',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 16,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SpinKitThreeBounce(color: Colors.black, size: 30),
+                        SizedBox(height: 20),
+                        Text(
+                          'Calculating fares...',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            )
+                  )
                 : _buildContent(myScrollController, locationProvider),
           ),
         );
@@ -112,7 +112,8 @@ class _VehicleSelectionWidgetState extends State<VehicleSelectionWidget> {
     );
   }
 
-  Widget _buildContent(ScrollController scrollController, LocationProvider locationProvider) {
+  Widget _buildContent(
+      ScrollController scrollController, LocationProvider locationProvider) {
     if (locationProvider.routeModel == null) {
       return Center(
         child: Padding(
@@ -151,7 +152,8 @@ class _VehicleSelectionWidgetState extends State<VehicleSelectionWidget> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 child: const Text(
                   'Retry',
@@ -171,8 +173,8 @@ class _VehicleSelectionWidgetState extends State<VehicleSelectionWidget> {
     // Initialize selected index
     if (fares.isNotEmpty) {
       _selectedIndex = fares.indexWhere((fare) =>
-      locationProvider.selectedVehicleType.toLowerCase() == fare.vehicleType.toLowerCase()
-      );
+          locationProvider.selectedVehicleType.toLowerCase() ==
+          fare.vehicleType.toLowerCase());
       if (_selectedIndex < 0) _selectedIndex = 0;
     }
 
@@ -335,21 +337,23 @@ class _VehicleSelectionWidgetState extends State<VehicleSelectionWidget> {
             color: isSelected ? Colors.yellow.shade700 : Colors.grey.shade200,
             width: isSelected ? 2 : 1.5,
           ),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: Colors.yellow.withOpacity(0.1),
-              blurRadius: 15,
-              spreadRadius: 2,
-              offset: const Offset(0, 4),
-            ),
-          ] : [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.05),
-              blurRadius: 8,
-              spreadRadius: 1,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.yellow.withAlpha(26),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.grey.withAlpha(13),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         child: Row(
           children: [
@@ -359,7 +363,9 @@ class _VehicleSelectionWidgetState extends State<VehicleSelectionWidget> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.yellow.shade100 : Colors.grey.shade50,
+                    color: isSelected
+                        ? Colors.yellow.shade100
+                        : Colors.grey.shade50,
                     shape: BoxShape.circle,
                   ),
                   child: Image.asset(
@@ -397,7 +403,8 @@ class _VehicleSelectionWidgetState extends State<VehicleSelectionWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    vehicleType.substring(0, 1).toUpperCase() + vehicleType.substring(1),
+                    vehicleType.substring(0, 1).toUpperCase() +
+                        vehicleType.substring(1),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -430,7 +437,8 @@ class _VehicleSelectionWidgetState extends State<VehicleSelectionWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.yellow.shade700 : Colors.grey.shade100,
+                color:
+                    isSelected ? Colors.yellow.shade700 : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -448,7 +456,8 @@ class _VehicleSelectionWidgetState extends State<VehicleSelectionWidget> {
     );
   }
 
-  Widget _buildRequestRideButton(AppStateProvider appState, UserProvider userProvider, LocationProvider locationProvider) {
+  Widget _buildRequestRideButton(AppStateProvider appState,
+      UserProvider userProvider, LocationProvider locationProvider) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -459,7 +468,8 @@ class _VehicleSelectionWidgetState extends State<VehicleSelectionWidget> {
             riderId: userProvider.user!.uid,
             type: TripType.ride,
             pickup: locationProvider.pickupCoordinates,
-            pickupAddress: locationProvider.locationAddress ?? "Current Location",
+            pickupAddress:
+                locationProvider.locationAddress ?? "Current Location",
             destination: locationProvider.destinationCoordinates!,
             destinationAddress: locationProvider.destinationController.text,
             vehicleType: selectedType,
@@ -480,7 +490,7 @@ class _VehicleSelectionWidgetState extends State<VehicleSelectionWidget> {
           ),
           padding: const EdgeInsets.symmetric(vertical: 18),
           elevation: 2,
-          shadowColor: Colors.black.withOpacity(0.3),
+          shadowColor: Colors.black.withAlpha(77),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,

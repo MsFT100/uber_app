@@ -20,7 +20,7 @@ class DestinationConfirmationControls extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withAlpha(38),
               blurRadius: 20,
               spreadRadius: 2,
               offset: const Offset(0, 8),
@@ -103,7 +103,7 @@ class DestinationConfirmationControls extends StatelessWidget {
               color: Colors.amber.shade600, // Yellow color
               boxShadow: [
                 BoxShadow(
-                  color: Colors.amber.shade600.withOpacity(0.3),
+                  color: Colors.amber.shade600.withAlpha(77),
                   blurRadius: 8,
                   spreadRadius: 1,
                   offset: const Offset(0, 3),

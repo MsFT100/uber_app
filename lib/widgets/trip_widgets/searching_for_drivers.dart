@@ -75,7 +75,7 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withAlpha(38),
                 blurRadius: 30,
                 spreadRadius: 5,
                 offset: const Offset(0, -2),
@@ -120,46 +120,49 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                       children: [
                         // Status chip
                         if (status != TripStatus.no_drivers_found)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: primaryColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: primaryColor.withOpacity(0.2),
-                                width: 1,
+                          FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  margin: const EdgeInsets.only(right: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.green.withOpacity(0.5),
-                                        blurRadius: 4,
-                                      ),
-                                    ],
-                                  ),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withAlpha(26),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: primaryColor.withAlpha(51),
+                                  width: 1,
                                 ),
-                                Text(
-                                  "Searching nearby drivers",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey.shade700,
-                                    fontWeight: FontWeight.w500,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    margin: const EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                        color: Colors.green.withAlpha(128),
+                                          blurRadius: 4,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  Text(
+                                    "Searching nearby drivers",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
 
@@ -202,7 +205,7 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: primaryColor.withOpacity(0.2),
+                    color: primaryColor.withAlpha(51),
                     width: 3,
                   ),
                 ),
@@ -219,7 +222,7 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: primaryColor.withOpacity(0.4),
+                      color: primaryColor.withAlpha(102),
                       width: 2,
                     ),
                   ),
@@ -239,7 +242,7 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: primaryColor.withOpacity(0.3),
+                        color: primaryColor.withAlpha(77),
                         blurRadius: 15 * _pulseAnimation.value,
                         spreadRadius: 5 * _pulseAnimation.value,
                       ),
@@ -255,8 +258,6 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
             ),
           ],
         ),
-
-
       ],
     );
   }
@@ -279,7 +280,7 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: Colors.orange.withAlpha(26),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),
@@ -403,7 +404,8 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
     );
   }
 
-  Widget _buildActionButton(BuildContext context, AppStateProvider appState, TripStatus? status) {
+  Widget _buildActionButton(
+      BuildContext context, AppStateProvider appState, TripStatus? status) {
     final userProvider = context.read<UserProvider>();
     final locationProvider = context.read<LocationProvider>();
 
@@ -438,7 +440,7 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
               ),
               padding: const EdgeInsets.symmetric(vertical: 18),
               elevation: 2,
-              shadowColor: Colors.black.withOpacity(0.1),
+              shadowColor: Colors.black.withAlpha(26),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
