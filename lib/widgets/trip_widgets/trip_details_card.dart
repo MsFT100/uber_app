@@ -50,7 +50,7 @@ class TripDetailsCard extends StatelessWidget {
             children: [
               Text(driver!.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               if (driver!.rating != null) Text('Rating: ${driver!.rating?.toStringAsFixed(1)} ⭐'),
-              if (driver!.carModel != null) Text('${driver!.carModel} - ${driver!.licensePlate}'),
+              if (driver!.vehicle?.model != null) Text('${driver!.vehicle?.model} - ${driver!.vehicle?.numberPlate}'),
             ],
           ),
         ),

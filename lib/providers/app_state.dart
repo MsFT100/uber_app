@@ -30,7 +30,8 @@ class AppStateProvider with ChangeNotifier {
   // This is the entry point for push notifications
   void handlePushNotification(Map<String, dynamic> data) {
     final type = data['type'];
-    final id = data['id']?.toString();
+    // FIX: Prioritize 'tripId' from the notification payload, fall back to 'id'.
+    final id = (data['tripId'] ?? data['id'])?.toString();
 
     if (id == null) {
       debugPrint("Notification received without a tripId.");
@@ -39,14 +40,22 @@ class AppStateProvider with ChangeNotifier {
 
     switch (type) {
       case 'DRIVER_ACCEPTED':
+        debugPrint("Handling '$type' notification for tripId: $id");
+        // For DRIVER_ACCEPTED, the driver info is in the notification payload.
+        // We can parse it and update the UI state immediately for a faster response.
+        _driver = Driver.fromMap(data);
+        _locationProvider?.show = Show.DRIVER_FOUND;
+        notifyListeners(); // Notify UI to switch to the DriverFoundWidget
+        _fetchTripDetails(id,
+            initialDriver:
+                _driver); // Fetch full trip details in the background
+        break;
       case 'DRIVER_CANCELLED':
       case 'NO_DRIVERS_FOUND':
-        debugPrint("Handling '$type' notification for tripId: $id");
-        _fetchTripDetails(id);
-        break;
       case 'TRIP_UPDATE': // Generic update
         debugPrint("Handling '$type' notification for tripId: $id");
-        _fetchTripDetails(id);
+        // For other updates, we don't have driver data in the payload, so we pass null.
+        _fetchTripDetails(id, initialDriver: null);
         break;
       // Handle other notification types as needed
       default:
@@ -54,8 +63,11 @@ class AppStateProvider with ChangeNotifier {
     }
   }
 
-  void _fetchTripDetails(String id) {
+  void _fetchTripDetails(String id, {Driver? initialDriver}) {
     _tripSubscription?.cancel();
+    if (initialDriver != null) {
+      _driver = initialDriver;
+    }
     _tripSubscription = FirebaseFirestore.instance
         .collection('trips')
         .doc(id)
@@ -63,21 +75,51 @@ class AppStateProvider with ChangeNotifier {
         .listen((snapshot) {
       if (snapshot.exists) {
         _currentTrip = Trip.fromFirestore(snapshot);
+
         debugPrint(
             "Trip data updated from Firestore. New status: ${_currentTrip?.status}");
 
-        // Parse driver data directly from the trip document
-        final tripData = snapshot.data() as Map<String, dynamic>;
-        if (tripData.containsKey('driver') && tripData['driver'] != null) {
-          // If the 'driver' field exists, parse it.
-          _driver = Driver.fromMap(tripData['driver'] as Map<String, dynamic>);
-        } else {
-          // If not, ensure the local driver object is null.
-          _driver = null;
+        // Only update driver from Firestore if we didn't get it from the push notification
+        if (initialDriver == null) {
+          final tripData = snapshot.data() as Map<String, dynamic>;
+          if (tripData.containsKey('driver') && tripData['driver'] != null) {
+            // If the 'driver' field exists, parse it.
+            // --- DEBUGGING: Print the raw driver data from Firestore ---
+            debugPrint("Raw driver data from Firestore: ${tripData['driver']}");
+            // --- END DEBUGGING ---
+
+            _driver =
+                Driver.fromMap(tripData['driver'] as Map<String, dynamic>);
+          } else {
+            // If not, ensure the local driver object is null.
+            _driver = null;
+          }
         }
 
         // Notify LocationProvider to start its own listeners
         _locationProvider?.listenToTrip(id);
+        // Update the UI state in LocationProvider based on the trip status
+        switch (_currentTrip?.status) {
+          case TripStatus.requested:
+          case TripStatus.no_drivers_found:
+            _locationProvider?.show = Show.SEARCHING_DRIVER;
+            break;
+          case TripStatus.accepted:
+          case TripStatus.en_route_to_pickup:
+            _locationProvider?.show = Show.DRIVER_FOUND;
+            break;
+          case TripStatus.arrived_at_pickup: // Fallthrough
+          case TripStatus.in_progress:
+            _locationProvider?.show = Show.TRIP;
+            break;
+          case TripStatus.completed:
+          case TripStatus.cancelled_by_driver:
+          case TripStatus.cancelled_by_rider:
+            _locationProvider?.cancelRideRequest(); // Resets to default
+            break;
+          default:
+            break;
+        }
       } else {
         _clearTripState();
       }
@@ -101,7 +143,7 @@ class AppStateProvider with ChangeNotifier {
       final dynamic tripDetails = tripData['trip'];
       if (tripDetails != null && tripDetails['id'] != null) {
         final String id = tripDetails['id'].toString();
-        _fetchTripDetails(id);
+        _fetchTripDetails(id, initialDriver: null);
       } else {
         throw Exception("Trip ID was not found in the server response.");
       }

@@ -112,7 +112,7 @@ class _FindDriverScreenState extends State<FindDriverScreen>
           const SizedBox(height: 12),
           Text(driver.name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
-          Text('${driver.carModel ?? ''} ${driver.carColor ?? ''} - ${driver.licensePlate ?? ''}', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+          Text('${driver.vehicle?.model ?? ''} ${driver.vehicle?.color ?? ''} - ${driver.vehicle?.numberPlate ?? ''}', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
           const SizedBox(height: 24),
           const Text('Your driver is on the way.'),
         ],

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:BucoRide/services/api_service.dart';
@@ -36,6 +37,7 @@ class LocationProvider with ChangeNotifier {
   static const LOCATION_MARKER_ID = 'location';
   static const DESTINATION_MARKER_ID = 'destination';
   static const ADDRESS_MARKER_ID = 'address';
+  static const DRIVER_MARKER_ID = 'driver';
 
   Show _show = Show.DESTINATION_SELECTION;
   bool _isSearching = false;
@@ -54,11 +56,13 @@ class LocationProvider with ChangeNotifier {
 
   LatLng? destinationCoordinates;
   LatLng pickupCoordinates = _center;
+  LatLng? _driverPosition;
   LatLng _lastPosition = _center;
 
   String? tripId;
   String? tripStatus;
   Driver? driver;
+  String? driverEta;
   String? _sessionToken;
   String selectedVehicleType = 'sedan'; // Default vehicle type
 
@@ -90,6 +94,8 @@ class LocationProvider with ChangeNotifier {
   //--- NEW PROPERTIES FOR ANIMATION ---
   AnimationController? _bounceController;
   Animation<double>? _bounceAnimation;
+  AnimationController? _driverMarkerController;
+  Animation<double>? _driverMarkerAnimation;
 
   LocationProvider({required ApiService apiService, String? accessToken})
       : _apiService = apiService,
@@ -106,6 +112,12 @@ class LocationProvider with ChangeNotifier {
     _bounceAnimation!.addListener(() {
       notifyListeners();
     });
+
+    // --- INITIALIZE DRIVER MARKER ANIMATION CONTROLLER ---
+    _driverMarkerController = AnimationController(
+        duration: const Duration(seconds: 1), vsync: vsync);
+    _driverMarkerAnimation =
+        CurvedAnimation(parent: _driverMarkerController!, curve: Curves.linear);
     // --- END INITIALIZATION ---
     await _loadCustomMarkers();
     await fetchLocation();
@@ -115,6 +127,7 @@ class LocationProvider with ChangeNotifier {
   @override
   void dispose() {
     _bounceController?.dispose();
+    _driverMarkerController?.dispose();
     _positionStreamSubscription?.cancel();
     _tripStreamSubscription?.cancel();
     _debounce?.cancel();
@@ -227,10 +240,10 @@ class LocationProvider with ChangeNotifier {
           driver = Driver.fromMap(data['driver']);
           final location = data['driver_location'] as GeoPoint;
           final driverPosition = LatLng(location.latitude, location.longitude);
-          _updateDriverMarker(driverPosition, driver!.name);
+          _animateDriverMarker(driverPosition, driver!.name);
         } else {
           driver = null;
-          _markers.removeWhere((m) => m.markerId.value == 'driver');
+          _markers.removeWhere((m) => m.markerId.value == DRIVER_MARKER_ID);
         }
 
         handleTripStatus(tripStatus);
@@ -262,15 +275,108 @@ class LocationProvider with ChangeNotifier {
     }
   }
 
-  void _updateDriverMarker(LatLng driverPosition, String driverName) {
-    _markers.removeWhere((m) => m.markerId.value == 'driver');
+  void _animateDriverMarker(LatLng newPosition, String driverName) {
+    if (_driverPosition == null) {
+      // If it's the first update, just place the marker.
+      _updateDriverMarker(newPosition, driverName, 0);
+      _driverPosition = newPosition;
+      _getDriverToPickupRoute(newPosition);
+      return;
+    }
+
+    final LatLng oldPosition = _driverPosition!;
+    final double bearing = _calculateBearing(oldPosition, newPosition);
+
+    _driverMarkerAnimation?.addListener(() {
+      final lat = oldPosition.latitude +
+          (newPosition.latitude - oldPosition.latitude) *
+              _driverMarkerAnimation!.value;
+      final lng = oldPosition.longitude +
+          (newPosition.longitude - oldPosition.longitude) *
+              _driverMarkerAnimation!.value;
+      _updateDriverMarker(LatLng(lat, lng), driverName, bearing);
+    });
+
+    _driverMarkerController?.forward(from: 0.0).whenComplete(() {
+      // Clean up listener to avoid multiple registrations
+      _driverMarkerAnimation?.removeListener(() {});
+      _driverPosition = newPosition;
+      _getDriverToPickupRoute(newPosition);
+    });
+  }
+
+  void _updateDriverMarker(
+      LatLng driverPosition, String driverName, double bearing) {
+    _markers.removeWhere((m) => m.markerId.value == DRIVER_MARKER_ID);
     _markers.add(Marker(
-      markerId: const MarkerId('driver'),
+      markerId: const MarkerId(DRIVER_MARKER_ID),
       position: driverPosition,
       icon: carIcon,
       infoWindow: InfoWindow(title: driverName),
+      rotation: bearing,
+      anchor: const Offset(0.5, 0.5), // Center the icon on the coordinate
+      flat: true, // Make the marker lie flat on the map
     ));
     notifyListeners();
+  }
+
+  Future<void> _getDriverToPickupRoute(LatLng driverPosition) async {
+    // Avoid refetching if the driver hasn't moved much.
+    if (_driverPosition != null &&
+        (Geolocator.distanceBetween(
+              _driverPosition!.latitude,
+              _driverPosition!.longitude,
+              driverPosition.latitude,
+              driverPosition.longitude,
+            ) <
+            50)) {
+      return;
+    }
+
+    if (_accessToken == null) return;
+
+    try {
+      final routeData = await _apiService.getDirectionsProxy(
+        accessToken: _accessToken,
+        origin: driverPosition,
+        destination: pickupCoordinates, // The rider's pickup location
+      );
+
+      if (routeData != null) {
+        if (routeData['duration'] != null) {
+          driverEta = TimeNeeded.fromMap(routeData['duration']).text;
+        }
+
+        final encodedPolyline = routeData['polyline'];
+        _polylines.removeWhere((p) => p.polylineId.value == 'driver_to_pickup');
+        _polylines.add(Polyline(
+          polylineId: const PolylineId('driver_to_pickup'),
+          points: _decodePolyline(encodedPolyline),
+          color: Colors.blue, // A different color for this route
+          width: 5,
+        ));
+        // Notify listeners to update UI with new route and ETA
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("Error getting driver to pickup route: $e");
+    }
+  }
+
+  double _calculateBearing(LatLng begin, LatLng end) {
+    double lat1 = begin.latitude * pi / 180;
+    double lon1 = begin.longitude * pi / 180;
+    double lat2 = end.latitude * pi / 180;
+    double lon2 = end.longitude * pi / 180;
+
+    double dLon = lon2 - lon1;
+
+    double y = sin(dLon) * cos(lat2);
+    double x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon);
+
+    double bearing = atan2(y, x);
+    bearing = bearing * 180 / pi;
+    return (bearing + 360) % 360;
   }
 
   void _addCurrentLocationMarker(LatLng position) {
@@ -377,6 +483,7 @@ class LocationProvider with ChangeNotifier {
 
   void clearPolylines() {
     _polylines.clear();
+    _driverPosition = null; // Reset driver position when clearing routes
     notifyListeners();
   }
 
@@ -393,6 +500,7 @@ class LocationProvider with ChangeNotifier {
     destinationController.clear();
     destinationCoordinates = null;
     routeModel = null;
+    driverEta = null;
     notifyListeners();
   }
 

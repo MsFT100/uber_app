@@ -1,189 +1,162 @@
-import 'package:BucoRide/providers/location_provider.dart';
-import 'package:BucoRide/utils/dimensions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import '../../locators/service_locator.dart';
 import '../../models/trip.dart';
 import '../../providers/app_state.dart';
-import '../../providers/user_provider.dart';
-import '../../services/call_sms.dart';
+import '../../providers/location_provider.dart';
 
-class DriverFoundWidget extends StatefulWidget {
-  const DriverFoundWidget({Key? key}) : super(key: key);
+class DriverFoundWidget extends StatelessWidget {
+  final AppStateProvider provider;
 
-  @override
-  _DriverFoundWidgetState createState() => _DriverFoundWidgetState();
-}
-
-class _DriverFoundWidgetState extends State<DriverFoundWidget> {
-  final CallsAndMessagesService _service = locator<CallsAndMessagesService>();
+  const DriverFoundWidget({super.key, required this.provider});
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppStateProvider>(context);
-    final locationProvider = Provider.of<LocationProvider>(context);
-    final userProvider = Provider.of<UserProvider>(context);
+    final driver = provider.driver;
+    final trip = provider.currentTrip;
+    final locationProvider = context.watch<LocationProvider>();
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.25,
-      minChildSize: 0.1,
-      maxChildSize: 0.5,
-      builder: (BuildContext context, myscrollController) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20.0),
-              topRight: Radius.circular(20.0),
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: ListView(
-            controller: myscrollController,
-            children: [
-              Center(
-                child: Text(
-                  appState.currentTrip?.status == TripStatus.arrived_at_pickup
-                      ? 'Your ride has arrived'
-                      : 'Your ride arrives in ${locationProvider.routeModel?.timeNeeded.text ?? '...'}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: appState.currentTrip?.status == TripStatus.arrived_at_pickup ? Colors.green : Colors.grey,
-                  ),
-                ),
-              ),
-              const Divider(thickness: 1.5),
-              _buildDriverInfo(appState),
-              const Divider(thickness: 1.5),
-              _buildRideDetails(appState),
-              const Divider(thickness: 1.5),
-              _buildRidePrice(appState),
-              const SizedBox(height: 12),
-              _buildCancelButton(appState, locationProvider, userProvider),
-            ],
-          ),
-        );
-      },
-    );
-  }
+    if (driver == null || trip == null) {
+      // Show a loading state while driver data is being populated
+      return const Center(child: CircularProgressIndicator());
+    }
 
-  Widget _buildDriverInfo(AppStateProvider appState) {
-    return ListTile(
-      leading: CircleAvatar(
-        radius: 35,
-        backgroundImage: null,
-        child: appState.driver?.profilePhotoUrl == null
-            ? const Icon(Icons.person_outline, size: 30, color: Colors.white)
-            : null,
-      ),
-      title: Text(
-        appState.driver?.name ?? 'Loading...',
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        textAlign: TextAlign.center,
-      ),
-      subtitle: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+    final theme = Theme.of(context);
+
+    return SingleChildScrollView(
+      child: Column(
         children: [
+          const SizedBox(height: 10),
           Text(
-            appState.driver?.carModel ?? '',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: Dimensions.fontSizeSmall, color: Colors.grey),
+            trip.status == TripStatus.en_route_to_pickup
+                ? "Driver is on the way"
+                : "Driver Found!",
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          const SizedBox(
-            width: Dimensions.paddingSize,
-          ),
-          Text(
-            appState.driver?.licensePlate ?? '',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: Dimensions.fontSizeDefault, color: Colors.black),
-          ),
-        ],
-      ),
-      trailing: IconButton(
-        icon: const Icon(Icons.call, color: Colors.green, size: 30),
-        onPressed: () {
-            _service.call(appState.driver!.name);
-        },
-      ),
-    );
-  }
-
-  Widget _buildRideDetails(AppStateProvider appState) {
-    final locationProvider = Provider.of<LocationProvider>(context);
-
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Ride details", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            const Icon(Icons.location_on, color: Colors.redAccent),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Pickup Location",
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(locationProvider.locationAddress ?? 'Loading...'),
-                  const SizedBox(height: 8),
-                  const Text("Destination",
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(appState.currentTrip!.destinationAddress),
-                ],
+          if (locationProvider.driverEta != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              "Arriving in ${locationProvider.driverEta}",
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRidePrice(AppStateProvider appState) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text("Ride Price", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        Text(
-          "\Ksh ${appState.currentTrip?.price}",
-          style: const TextStyle(
-              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCancelButton(
-      AppStateProvider provider, LocationProvider locationProvider, UserProvider userProvider) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        onPressed: () {
-          final accessToken = userProvider.accessToken;
-          if (accessToken != null) {
-            provider.cancelTrip(accessToken);
-          }
-        },
-        child: const Text("Cancel Ride",
-            style: TextStyle(color: Colors.white, fontSize: 16)),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              // Driver profile picture
+              CircleAvatar(
+                radius: 35,
+                backgroundColor: Colors.grey.shade200,
+                backgroundImage: driver.profilePhotoUrl != null
+                    ? NetworkImage(driver.profilePhotoUrl!)
+                    : null,
+                child: driver.profilePhotoUrl == null
+                    ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              // Driver name and rating
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      driver.name,
+                      style: theme.textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.star,
+                            color: Colors.amber.shade600, size: 20),
+                        const SizedBox(width: 4),
+                        Text(
+                          (driver.rating ?? 0.0).toStringAsFixed(2),
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(color: Colors.grey.shade700),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Call button
+              IconButton(
+                icon: const Icon(Icons.call, size: 28),
+                color: theme.primaryColor,
+                style: IconButton.styleFrom(
+                  backgroundColor: theme.primaryColor.withOpacity(0.1),
+                  padding: const EdgeInsets.all(12),
+                ),
+                onPressed: () async {
+                  if (driver.phone != null) {
+                    final Uri launchUri =
+                        Uri(scheme: 'tel', path: driver.phone!);
+                    if (await canLaunchUrl(launchUri)) {
+                      await launchUrl(launchUri);
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // Vehicle details
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "VEHICLE",
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${driver.vehicle?.color ?? ''} ${driver.vehicle?.model ?? ''}',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      "LICENSE PLATE",
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      driver.vehicle?.numberPlate ?? 'N/A',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }

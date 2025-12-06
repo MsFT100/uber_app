@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/trip.dart';
 import '../../providers/app_state.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/user_provider.dart';
+import 'driver_found.dart';
 
 class SearchingForDrivers extends StatefulWidget {
   const SearchingForDrivers({super.key});
@@ -113,15 +115,11 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: status == TripStatus.no_drivers_found
-                          ? FadeTransition(
-                              opacity: _noDriversFadeAnimation =
-                                  Tween<double>(begin: 0.0, end: 1.0).animate(
-                                CurvedAnimation(parent: _pulseController, curve: Curves.easeIn),
-                              ),
-                              child: _buildNoDriversFoundUI(primaryColor),
-                            )
-                          : _buildSearchingUI(primaryColor),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 500),
+                        child: _buildContentByStatus(
+                            status, primaryColor, provider),
+                      ),
                     ),
                   ),
 
@@ -134,7 +132,9 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                     child: Column(
                       children: [
                         // Status chip
-                        if (status != TripStatus.no_drivers_found)
+                        if (status != TripStatus.no_drivers_found &&
+                            status != TripStatus.accepted &&
+                            status != TripStatus.en_route_to_pickup)
                           FadeTransition(
                             opacity: _fadeAnimation,
                             child: Container(
@@ -162,7 +162,7 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                                       shape: BoxShape.circle,
                                       boxShadow: [
                                         BoxShadow(
-                                        color: Colors.green.withAlpha(128),
+                                          color: Colors.green.withAlpha(128),
                                           blurRadius: 4,
                                         ),
                                       ],
@@ -197,8 +197,34 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
     );
   }
 
-  Widget _buildSearchingUI(Color primaryColor) {
+  Widget _buildContentByStatus(
+      TripStatus? status, Color primaryColor, AppStateProvider provider) {
+    switch (status) {
+      case TripStatus.no_drivers_found:
+        return FadeTransition(
+          key: const ValueKey('no-drivers'),
+          opacity: _noDriversFadeAnimation =
+              Tween<double>(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(parent: _pulseController, curve: Curves.easeIn),
+          ),
+          child: _buildNoDriversFoundUI(primaryColor),
+        );
+      case TripStatus.accepted:
+      case TripStatus.en_route_to_pickup:
+        return DriverFoundWidget(
+            key: const ValueKey('driver-found'), provider: provider);
+      case TripStatus.requested:
+      default:
+        return _buildSearchingUI(
+          key: const ValueKey('searching'),
+          primaryColor: primaryColor,
+        );
+    }
+  }
+
+  Widget _buildSearchingUI({required Key key, required Color primaryColor}) {
     return Column(
+      key: key,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // Animated radar/search icon
@@ -218,8 +244,8 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                       shape: BoxShape.circle,
                       gradient: SweepGradient(
                         colors: [
-                          primaryColor.withOpacity(0.0),
-                          primaryColor.withOpacity(0.4),
+                          primaryColor.withValues(alpha: 0.0),
+                          primaryColor.withValues(alpha: 0.4),
                         ],
                         stops: const [0.0, 0.3],
                       ),
@@ -259,7 +285,7 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: primaryColor.withOpacity(0.3),
+                        color: primaryColor.withValues(alpha: 0.3),
                         blurRadius: 15 * _pulseAnimation.value,
                         spreadRadius: 5 * _pulseAnimation.value,
                       ),
@@ -432,25 +458,46 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
         children: [
           // Primary action button
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              // Prevent action if no driver is assigned yet
+              if (status == TripStatus.accepted && appState.driver == null) {
+                return;
+              }
+
               final accessToken = userProvider.accessToken;
               if (accessToken != null) {
                 if (status == TripStatus.no_drivers_found) {
                   // Close and reset
                   locationProvider.cancelRideRequest();
-                } else {
-                  // Cancel search
-                  appState.cancelTrip(accessToken);
-                  locationProvider.cancelRideRequest();
+                } else if (status == TripStatus.requested) {
+                  // Show confirmation dialog before cancelling
+                  final bool? confirmCancel =
+                      await _showCancelConfirmationDialog(context);
+                  if (confirmCancel == true) {
+                    appState.cancelTrip(accessToken);
+                    locationProvider.cancelRideRequest();
+                  }
+                } else if ((status == TripStatus.accepted ||
+                        status == TripStatus.en_route_to_pickup) &&
+                    appState.driver?.phone != null) {
+                  // Launch SMS app to message the driver
+                  final Uri launchUri =
+                      Uri(scheme: 'sms', path: appState.driver!.phone!);
+                  if (await canLaunchUrl(launchUri)) {
+                    await launchUrl(launchUri);
+                  }
                 }
               }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: status == TripStatus.no_drivers_found
-                  ? Colors.grey.shade300
-                  : Colors.red.shade500,
+                  ? Colors.grey.shade300 // Close button
+                  : (status == TripStatus.accepted ||
+                          status == TripStatus.en_route_to_pickup)
+                      ? Theme.of(context).primaryColor // Message button
+                      : Colors.red.shade500, // Cancel button
               foregroundColor: status == TripStatus.no_drivers_found
-                  ? Colors.grey.shade700
+                  ? Colors.grey.shade800
                   : Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -465,14 +512,20 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                 Icon(
                   status == TripStatus.no_drivers_found
                       ? Icons.close_rounded
-                      : Icons.cancel_rounded,
+                      : (status == TripStatus.accepted ||
+                              status == TripStatus.en_route_to_pickup)
+                          ? Icons.message_rounded
+                          : Icons.cancel_rounded,
                   size: 22,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   status == TripStatus.no_drivers_found
                       ? "Close"
-                      : "Cancel Search",
+                      : (status == TripStatus.accepted ||
+                              status == TripStatus.en_route_to_pickup)
+                          ? "Message Driver"
+                          : "Cancel Search",
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -487,8 +540,9 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: () {
-                // Add retry logic here if needed
-                // Could trigger a new search
+                debugPrint("Retrying trip request...");
+                locationProvider.getRouteAndEstimate();
+                locationProvider.show = Show.VEHICLE_SELECTION;
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: Theme.of(context).primaryColor,
@@ -519,6 +573,38 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
           ],
         ],
       ),
+    );
+  }
+
+  Future<bool?> _showCancelConfirmationDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Cancel Search?'),
+          content:
+              const Text('Are you sure you want to stop searching for a driver?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Keep Searching'),
+              onPressed: () {
+                Navigator.of(context).pop(false); // User does not want to cancel
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Yes, Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(true); // User confirms cancellation
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

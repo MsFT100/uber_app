@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../providers/app_state.dart';
 
 import '../helpers/constants.dart';
 import '../helpers/style.dart';
@@ -31,8 +32,6 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _restoreSystemUI();
   }
-
-
 
   void _restoreSystemUI() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
@@ -81,8 +80,7 @@ class _HomePageState extends State<HomePage> {
                               child: RichText(
                                   text: TextSpan(children: [
                                 TextSpan(
-                                    text:
-                                        "You'll reach your destination in \n",
+                                    text: "You'll reach your destination in \n",
                                     style:
                                         TextStyle(fontWeight: FontWeight.w300)),
                                 TextSpan(
@@ -115,11 +113,14 @@ class _HomePageState extends State<HomePage> {
               child: VehicleSelectionWidget()),
           //  ANCHOR Draggable DRIVER
           Visibility(
-              visible: locationProvider.show == Show.DRIVER_FOUND,
-              child: DriverFoundWidget()),
+            visible: locationProvider.show == Show.DRIVER_FOUND,
+            child:
+                DriverFoundWidget(provider: context.watch<AppStateProvider>()),
+          ),
           //  ANCHOR Draggable DRIVER
           Visibility(
-              visible: locationProvider.show == Show.TRIP, child: TripDraggable()),
+              visible: locationProvider.show == Show.TRIP,
+              child: TripDraggable()),
           Visibility(
               visible: locationProvider.show == Show.SEARCHING_DRIVER,
               child: SearchingForDrivers()),
