@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/trip.dart';
 import '../providers/app_state.dart';
 import '../providers/user_provider.dart';
+import '../screens/chat/chat_screen.dart';
 import '../widgets/trip_widgets/payment_rating_dialog.dart';
 import '../widgets/trip_widgets/trip_details_card.dart';
 
@@ -44,14 +45,16 @@ class _TripDraggableState extends State<TripDraggable> {
     final appState = Provider.of<AppStateProvider>(context);
     final trip = appState.currentTrip;
 
-    if (trip == null || trip.status == TripStatus.completed || trip.status == TripStatus.cancelled_by_rider) {
+    if (trip == null ||
+        trip.status == TripStatus.completed ||
+        trip.status == TripStatus.cancelled_by_rider) {
       return const SizedBox.shrink();
     }
 
     return DraggableScrollableSheet(
       initialChildSize: 0.4,
       minChildSize: 0.2,
-      maxChildSize: 0.8, 
+      maxChildSize: 0.8,
       builder: (BuildContext context, ScrollController scrollController) {
         return Container(
           decoration: BoxDecoration(
@@ -59,7 +62,7 @@ class _TripDraggableState extends State<TripDraggable> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withValues(alpha:0.5),
+                color: Colors.grey.withValues(alpha: 0.5),
                 spreadRadius: 3,
                 blurRadius: 7,
                 offset: const Offset(0, 3),
@@ -82,11 +85,13 @@ class _TripDraggableState extends State<TripDraggable> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               TripDetailsCard(trip: trip, driver: appState.driver),
-              
+
               const Divider(height: 32),
 
+              _buildChatButton(context, trip, appState),
+              const SizedBox(height: 12),
               _buildCancelTripButton(context, trip, appState),
 
               const SizedBox(height: 20),
@@ -97,12 +102,42 @@ class _TripDraggableState extends State<TripDraggable> {
     );
   }
 
-  Widget _buildCancelTripButton(BuildContext context, Trip trip, AppStateProvider appState) {
+  Widget _buildChatButton(
+      BuildContext context, Trip trip, AppStateProvider appState) {
+    return OutlinedButton.icon(
+      icon: const Icon(Icons.message_rounded),
+      label: const Text('Chat with Driver'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Theme.of(context).primaryColor,
+        side: BorderSide(color: Theme.of(context).primaryColor),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      onPressed: () {
+        if (appState.currentTrip?.id != null) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) =>
+                  ChatScreen(tripId: appState.currentTrip!.id!),
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildCancelTripButton(
+      BuildContext context, Trip trip, AppStateProvider appState) {
     // Only show cancel button for statuses where cancellation is logical
-    if (trip.status == TripStatus.pending || trip.status == TripStatus.accepted || trip.status == TripStatus.arriving) {
+    if (trip.status == TripStatus.pending ||
+        trip.status == TripStatus.accepted ||
+        trip.status == TripStatus.arriving) {
       return ElevatedButton.icon(
         icon: const Icon(Icons.cancel, color: Colors.white),
-        label: const Text('Cancel Trip', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        label: const Text('Cancel Trip',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.red,
           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -112,35 +147,43 @@ class _TripDraggableState extends State<TripDraggable> {
         ),
         onPressed: () async {
           final confirm = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Are you sure?'),
-              content: const Text('Do you want to cancel this trip?'),
-              actions: [
-                TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('No')),
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  child: const Text('Yes, Cancel', style: TextStyle(color: Colors.red)),
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Are you sure?'),
+                  content: const Text('Do you want to cancel this trip?'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('No')),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Yes, Cancel',
+                          style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ) ?? false;
+              ) ??
+              false;
 
           if (confirm) {
-            final userProvider = Provider.of<UserProvider>(context, listen: false);
+            final userProvider =
+                Provider.of<UserProvider>(context, listen: false);
             final accessToken = userProvider.accessToken;
             if (accessToken != null) {
               try {
                 await appState.cancelTrip(accessToken);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Trip cancelled successfully.')));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Trip cancelled successfully.')));
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error cancelling trip: $e')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error cancelling trip: $e')));
               }
             }
           }
         },
       );
     }
-    return const SizedBox.shrink(); // Return empty space if cancellation is not applicable
+    return const SizedBox
+        .shrink(); // Return empty space if cancellation is not applicable
   }
 }

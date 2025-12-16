@@ -75,6 +75,7 @@ class LocationProvider with ChangeNotifier {
   BitmapDescriptor startIcon = BitmapDescriptor.defaultMarker;
   BitmapDescriptor endIcon = BitmapDescriptor.defaultMarker;
   BitmapDescriptor carIcon = BitmapDescriptor.defaultMarker;
+  BitmapDescriptor parcelIcon = BitmapDescriptor.defaultMarker;
   BitmapDescriptor addressIcon = BitmapDescriptor.defaultMarker;
 
   Show get show => _show;
@@ -235,12 +236,13 @@ class LocationProvider with ChangeNotifier {
       if (snapshot.exists) {
         final data = snapshot.data() as Map<String, dynamic>;
         tripStatus = data['status'];
+        final tripType = data['tripType'];
 
         if (data.containsKey('driver') && data.containsKey('driver_location')) {
           driver = Driver.fromMap(data['driver']);
           final location = data['driver_location'] as GeoPoint;
           final driverPosition = LatLng(location.latitude, location.longitude);
-          _animateDriverMarker(driverPosition, driver!.name);
+          _animateDriverMarker(driverPosition, driver!.name, tripStatus, tripType);
         } else {
           driver = null;
           _markers.removeWhere((m) => m.markerId.value == DRIVER_MARKER_ID);
@@ -267,6 +269,7 @@ class LocationProvider with ChangeNotifier {
         show = Show.TRIP;
         break;
       case 'completed':
+        clearPolylines(); // Clear the route from the map
         show = Show.TRIP_COMPLETE;
         break;
       default:
@@ -275,12 +278,12 @@ class LocationProvider with ChangeNotifier {
     }
   }
 
-  void _animateDriverMarker(LatLng newPosition, String driverName) {
+  void _animateDriverMarker(LatLng newPosition, String driverName, String? status, String? tripType) {
     if (_driverPosition == null) {
       // If it's the first update, just place the marker.
-      _updateDriverMarker(newPosition, driverName, 0);
+      _updateDriverMarker(newPosition, driverName, 0, tripType);
       _driverPosition = newPosition;
-      _getDriverToPickupRoute(newPosition);
+      _getDriverRoute(newPosition, status);
       return;
     }
 
@@ -294,24 +297,24 @@ class LocationProvider with ChangeNotifier {
       final lng = oldPosition.longitude +
           (newPosition.longitude - oldPosition.longitude) *
               _driverMarkerAnimation!.value;
-      _updateDriverMarker(LatLng(lat, lng), driverName, bearing);
+      _updateDriverMarker(LatLng(lat, lng), driverName, bearing, tripType);
     });
 
     _driverMarkerController?.forward(from: 0.0).whenComplete(() {
       // Clean up listener to avoid multiple registrations
       _driverMarkerAnimation?.removeListener(() {});
       _driverPosition = newPosition;
-      _getDriverToPickupRoute(newPosition);
+      _getDriverRoute(newPosition, status);
     });
   }
 
   void _updateDriverMarker(
-      LatLng driverPosition, String driverName, double bearing) {
+      LatLng driverPosition, String driverName, double bearing, String? tripType) {
     _markers.removeWhere((m) => m.markerId.value == DRIVER_MARKER_ID);
     _markers.add(Marker(
       markerId: const MarkerId(DRIVER_MARKER_ID),
       position: driverPosition,
-      icon: carIcon,
+      icon: tripType == 'parcel' ? parcelIcon : carIcon,
       infoWindow: InfoWindow(title: driverName),
       rotation: bearing,
       anchor: const Offset(0.5, 0.5), // Center the icon on the coordinate
@@ -320,7 +323,7 @@ class LocationProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _getDriverToPickupRoute(LatLng driverPosition) async {
+  Future<void> _getDriverRoute(LatLng driverPosition, String? status) async {
     // Avoid refetching if the driver hasn't moved much.
     if (_driverPosition != null &&
         (Geolocator.distanceBetween(
@@ -335,11 +338,21 @@ class LocationProvider with ChangeNotifier {
 
     if (_accessToken == null) return;
 
+    // Determine the destination based on trip status
+    LatLng? routeDestination;
+    if (status == 'in_progress' && destinationCoordinates != null) {
+      // If trip is in progress, route is to the final destination
+      routeDestination = destinationCoordinates;
+    } else {
+      // Otherwise, route is to the pickup point
+      routeDestination = pickupCoordinates;
+    }
+
     try {
       final routeData = await _apiService.getDirectionsProxy(
         accessToken: _accessToken,
         origin: driverPosition,
-        destination: pickupCoordinates, // The rider's pickup location
+        destination: routeDestination!,
       );
 
       if (routeData != null) {
@@ -472,6 +485,22 @@ class LocationProvider with ChangeNotifier {
     }
     // We notify listeners here after all async work is done
     notifyListeners();
+  }
+
+  Future<Map<String, dynamic>> getFareEstimateForParcel({
+    required String accessToken,
+    required LatLng pickup,
+    required LatLng dropoff,
+  }) async {
+    try {
+      return await _apiService.getFareEstimate(
+        accessToken: accessToken,
+        pickup: pickup,
+        dropoff: dropoff,
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
   void _addDestinationMarker(LatLng start, LatLng end) {
@@ -621,6 +650,31 @@ class LocationProvider with ChangeNotifier {
     }
   }
 
+  /// Sets the destination from a saved address string.
+  Future<void> setDestinationFromAddress(String address) async {
+    try {
+      // Use geocoding to convert the address string to coordinates.
+      List<Location> locations = await locationFromAddress(address);
+      if (locations.isNotEmpty) {
+        final location = locations.first;
+        destinationCoordinates = LatLng(location.latitude, location.longitude);
+        destinationController.text = address;
+
+        // Reuse existing methods to update the map and UI state.
+        _addAnimatedDestinationMarker();
+        _animateCameraToDestination();
+
+        // Move to the confirmation screen.
+        show = Show.CONFIRMATION_SELECTION;
+        notifyListeners();
+      } else {
+        debugPrint("Could not find coordinates for address: $address");
+      }
+    } catch (e) {
+      debugPrint("Error setting destination from address: $e");
+    }
+  }
+
 // --- NEW METHOD: Smooth camera animation to destination ---
   Future<void> _animateCameraToDestination() async {
     if (destinationCoordinates == null || _mapController == null) return;
@@ -759,6 +813,8 @@ class LocationProvider with ChangeNotifier {
     startIcon = await _bitmapDescriptorFromAsset(Images.location, width: 30, height: 30);
     endIcon =
     await _bitmapDescriptorFromAsset(Images.mapLocationIcon, width: 100, height: 100);
+    parcelIcon =
+    await _bitmapDescriptorFromAsset(Images.parcelDeliveryman, width: 40, height: 40);
     addressIcon =
     await _bitmapDescriptorFromAsset(Images.mapLocationIcon, width: 100, height: 100);
   }

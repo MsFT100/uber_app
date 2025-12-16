@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/driver.dart';
 import '../models/trip.dart';
@@ -52,6 +53,9 @@ class AppStateProvider with ChangeNotifier {
         break;
       case 'DRIVER_CANCELLED':
       case 'NO_DRIVERS_FOUND':
+      case 'DRIVER_ARRIVED':
+      case 'TRIP_STARTED':
+      case 'TRIP_COMPLETED':
       case 'TRIP_UPDATE': // Generic update
         debugPrint("Handling '$type' notification for tripId: $id");
         // For other updates, we don't have driver data in the payload, so we pass null.
@@ -79,8 +83,10 @@ class AppStateProvider with ChangeNotifier {
         debugPrint(
             "Trip data updated from Firestore. New status: ${_currentTrip?.status}");
 
-        // Only update driver from Firestore if we didn't get it from the push notification
-        if (initialDriver == null) {
+        // This logic is now more robust:
+        // Only try to parse the driver from Firestore if we haven't already received
+        // it from a previous push notification (i.e., _driver is null).
+        if (initialDriver == null && _driver == null) {
           final tripData = snapshot.data() as Map<String, dynamic>;
           if (tripData.containsKey('driver') && tripData['driver'] != null) {
             // If the 'driver' field exists, parse it.
@@ -154,6 +160,44 @@ class AppStateProvider with ChangeNotifier {
     }
   }
 
+  Future<void> requestNewParcelTrip({
+    required Map<String, dynamic> parcelData,
+    required String vehicleType,
+    required String accessToken,
+  }) async {
+    try {
+      final LatLng pickupCoords = parcelData['pickupCoordinates'];
+      final LatLng dropoffCoords = parcelData['dropoffCoordinates'];
+
+      final tripData = await _apiService.requestParcelTrip(
+        accessToken: accessToken,
+        vehicleType: vehicleType,
+        pickup: {
+          'address': parcelData['pickupAddress'],
+          'lat': pickupCoords.latitude,
+          'lng': pickupCoords.longitude
+        },
+        dropoff: {
+          'address': parcelData['dropoffAddress'],
+          'lat': dropoffCoords.latitude,
+          'lng': dropoffCoords.longitude
+        },
+        parcelDetails: {
+          'recipientName': parcelData['recipientName'],
+          'recipientPhone': parcelData['recipientPhone'],
+          'description': parcelData['description'],
+          'size': parcelData['size'],
+        },
+      );
+
+      final String tripId = tripData['trip']['id'].toString();
+      _fetchTripDetails(tripId, initialDriver: null);
+    } catch (e) {
+      debugPrint('Error requesting parcel trip: $e');
+      rethrow;
+    }
+  }
+
   Future<void> cancelTrip(String accessToken) async {
     if (_currentTrip?.id != null) {
       try {
@@ -178,11 +222,55 @@ class AppStateProvider with ChangeNotifier {
         comment: comment,
         accessToken: accessToken,
       );
-      // Maybe update the UI to show that the rating was submitted
+      debugPrint("Rating submitted successfully.");
     } catch (e) {
       debugPrint('Error rating trip: $e');
       rethrow;
     }
+  }
+
+  Future<Map<String, dynamic>> initiatePayment({
+    required int tripId,
+    required String phone,
+    required String accessToken,
+  }) async {
+    try {
+      final response = await _apiService.initiateMpesaStkPush(
+        accessToken: accessToken,
+        tripId: tripId,
+        phone: phone,
+      );
+      return response;
+    } catch (e) {
+      debugPrint('Error initiating payment: $e');
+      rethrow;
+    }
+  }
+
+  // --- CHAT METHODS ---
+
+  Stream<QuerySnapshot> getChatMessages(String tripId) {
+    return FirebaseFirestore.instance
+        .collection('trips')
+        .doc(tripId)
+        .collection('messages')
+        .orderBy('timestamp', descending: false)
+        .snapshots();
+  }
+
+  Future<void> sendChatMessage(
+      {required String tripId,
+      required String text,
+      required String senderId}) async {
+    await FirebaseFirestore.instance
+        .collection('trips')
+        .doc(tripId)
+        .collection('messages')
+        .add({
+      'text': text,
+      'senderId': senderId,
+      'timestamp': FieldValue.serverTimestamp()
+    });
   }
 
   void _clearTripState() {

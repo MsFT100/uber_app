@@ -5,6 +5,7 @@ import 'package:BucoRide/widgets/trip_widgets/vehicle_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:BucoRide/models/trip.dart';
 
 import '../providers/app_state.dart';
 
@@ -12,6 +13,7 @@ import '../helpers/constants.dart';
 import '../helpers/style.dart';
 import '../widgets/trip_widgets/destination_selection.dart';
 import '../widgets/trip_widgets/driver_found.dart';
+import '../widgets/trip_widgets/trip_complete_card.dart';
 import '../widgets/trip_widgets/pickup_selection_widget.dart';
 import '../widgets/trip_draggable.dart';
 import 'map.dart';
@@ -42,12 +44,53 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final locationProvider =
         Provider.of<LocationProvider>(context, listen: true);
+    final appState = Provider.of<AppStateProvider>(context, listen: true);
 
     return Scaffold(
       key: _homeScaffoldKey,
       body: Stack(
         children: [
           MapScreen(),
+          Visibility(
+            visible: appState.currentTrip?.type == TripType.parcel &&
+                (appState.currentTrip?.status == TripStatus.en_route_to_pickup ||
+                    appState.currentTrip?.status == TripStatus.in_progress),
+            child: Positioned(
+              top: 60,
+              left: 20,
+              right: 20,
+              child: Card(
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        appState.currentTrip?.status ==
+                                TripStatus.en_route_to_pickup
+                            ? Icons.store_mall_directory_outlined
+                            : Icons.home_work_outlined,
+                        color: Theme.of(context).primaryColor,
+                        size: 30,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          appState.currentTrip?.status ==
+                                  TripStatus.en_route_to_pickup
+                              ? "Driver is on the way to pickup"
+                              : "Parcel is on the way to destination",
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
           Visibility(
             visible: locationProvider.show == Show.TRIP,
             child: Positioned(
@@ -124,8 +167,13 @@ class _HomePageState extends State<HomePage> {
           Visibility(
               visible: locationProvider.show == Show.SEARCHING_DRIVER,
               child: SearchingForDrivers()),
+          // ANCHOR TRIP COMPLETE WIDGET
+          Visibility(
+              visible: locationProvider.show == Show.TRIP_COMPLETE,
+              child: const TripCompleteCard()),
         ],
       ),
     );
   }
 }
+      

@@ -18,7 +18,8 @@ class AppConfig {
     }
     if (Platform.isAndroid) {
       //return 'http://10.0.2.2:3001'; // Use 10.0.2.2 for Android emulator
-      return 'http://192.168.0.100:3001'; // Use 10.0.2.2 for Android emulator
+      //return 'http://YOUR_COMPUTER_IP:3001'; // IMPORTANT: Replace with your computer's actual IP address
+      return 'http://10.65.205.247:3001'; // Use your computer's local IP for physical devices
     }
     // For iOS simulator, macOS, etc.
     return 'http://localhost:3000';

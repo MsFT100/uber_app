@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/trip.dart';
 import '../../providers/app_state.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../screens/chat/chat_screen.dart';
 import 'driver_found.dart';
 
 class SearchingForDrivers extends StatefulWidget {
@@ -477,15 +477,13 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
                     appState.cancelTrip(accessToken);
                     locationProvider.cancelRideRequest();
                   }
-                } else if ((status == TripStatus.accepted ||
-                        status == TripStatus.en_route_to_pickup) &&
-                    appState.driver?.phone != null) {
-                  // Launch SMS app to message the driver
-                  final Uri launchUri =
-                      Uri(scheme: 'sms', path: appState.driver!.phone!);
-                  if (await canLaunchUrl(launchUri)) {
-                    await launchUrl(launchUri);
-                  }
+                } else if (appState.currentTrip?.id != null &&
+                    (status == TripStatus.accepted ||
+                        status == TripStatus.en_route_to_pickup)) {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) =>
+                        ChatScreen(tripId: appState.currentTrip!.id!),
+                  ));
                 }
               }
             },
@@ -584,13 +582,14 @@ class _SearchingForDriversState extends State<SearchingForDrivers>
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Cancel Search?'),
-          content:
-              const Text('Are you sure you want to stop searching for a driver?'),
+          content: const Text(
+              'Are you sure you want to stop searching for a driver?'),
           actions: <Widget>[
             TextButton(
               child: const Text('Keep Searching'),
               onPressed: () {
-                Navigator.of(context).pop(false); // User does not want to cancel
+                Navigator.of(context)
+                    .pop(false); // User does not want to cancel
               },
             ),
             TextButton(

@@ -125,6 +125,51 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> requestParcelTrip({
+    required String accessToken,
+    required String vehicleType,
+    required Map<String, dynamic> pickup,
+    required Map<String, dynamic> dropoff,
+    required Map<String, dynamic> parcelDetails,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/api/trips/request');
+      debugPrint('Requesting a new PARCEL trip with URL: $url');
+
+      final body = {
+        'tripType': 'parcel', // Explicitly set to parcel
+        'vehicleType': vehicleType,
+        'pickup': pickup,
+        'dropoff': dropoff,
+        'parcelDetails': parcelDetails,
+      };
+
+      debugPrint('Parcel Request Body: ${jsonEncode(body)}');
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode(body),
+      );
+
+      final responseBody = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        debugPrint('Parcel trip created successfully: $responseBody');
+        return responseBody;
+      } else {
+        debugPrint('Failed to create parcel trip: ${response.body}');
+        throw Exception(responseBody['error'] ?? 'Failed to create parcel trip.');
+      }
+    } catch (e) {
+      debugPrint('An error occurred during parcel trip creation: $e');
+      rethrow;
+    }
+  }
+
   Future<void> cancelTrip({
     required String tripId,
     required String accessToken,
@@ -189,7 +234,7 @@ class ApiService {
     }
   }
 
-    Future<Map<String, dynamic>> initiateMpesaStkPush({
+  Future<Map<String, dynamic>> initiateMpesaStkPush({
     required String accessToken,
     required int tripId,
     required String phone,
@@ -355,5 +400,3 @@ class ApiService {
     }
   }
 }
-
-

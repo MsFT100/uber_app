@@ -41,7 +41,6 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
         Provider.of<LocationProvider>(context, listen: true);
     final address = locationProvider.locationAddress;
 
-
     return Container(
       color: Colors.grey[200],
       child: RefreshIndicator(
@@ -125,29 +124,26 @@ class _MenuWidgetScreenState extends State<MenuWidgetScreen> {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           _buildMenuButton("Go Moto", Images.bike, () {
-
-
             // 2. Pre-select the vehicle type
             locationProvider.selectVehicle('motorbike');
             locationProvider.show = Show.DESTINATION_SELECTION;
             changeScreen(context, HomePage());
           }),
-          SizedBox(
+          const SizedBox(
             width: Dimensions.paddingSize,
           ),
           _buildMenuButton("Car", Images.car, () {
-
             // 2. Pre-select the vehicle type
             locationProvider.selectVehicle('sedan');
 
             locationProvider.show = Show.DESTINATION_SELECTION;
             changeScreen(context, HomePage());
           }),
-          SizedBox(
+          const SizedBox(
             width: Dimensions.paddingSize,
           ),
           _buildMenuButton("Delivery", Images.parcelDeliveryman, () {
-            changeScreen(context, ParcelPage());
+            changeScreen(context, const ParcelPage());
           }),
         ],
       ),

@@ -1,8 +1,6 @@
-
 import 'package:BucoRide/helpers/constants.dart';
 import 'package:BucoRide/screens/auth/forgot_password.dart';
 import 'package:BucoRide/screens/auth/registration.dart';
-import 'package:BucoRide/services/permmsions_service.dart';
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
@@ -14,15 +12,13 @@ import '../../utils/dimensions.dart';
 import '../../utils/images.dart';
 import '../../widgets/app_snackbar.dart';
 
-
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final PermissionsService _permissionsService = PermissionsService();
-
+  
   @override
   Widget build(BuildContext context) {
     // Changed from listen:true to listen:false. We don't want the whole page to rebuild.
@@ -65,10 +61,12 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(height: MediaQuery.of(context).size.height * 0.1),
               _buildTextField(authProvider.email, 'Email', Icons.email, false),
-              _buildTextField(authProvider.password, 'Password', Icons.lock, true),
+              _buildTextField(
+                  authProvider.password, 'Password', Icons.lock, true),
               const SizedBox(height: Dimensions.paddingSizeSmall),
               // We pass the authProvider down to the button
-              _buildLoginButton(authProvider), // Pass only one instance of authProvider
+              _buildLoginButton(
+                  authProvider), // Pass only one instance of authProvider
               const SizedBox(height: Dimensions.paddingSizeSmall),
               _buildGoogleSignInButton(authProvider),
               const SizedBox(height: Dimensions.paddingSizeSmall),
@@ -79,12 +77,11 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-
     );
   }
 
-  Widget _buildTextField(
-      TextEditingController controller, String label, IconData icon, bool obscureText) {
+  Widget _buildTextField(TextEditingController controller, String label,
+      IconData icon, bool obscureText) {
     return Padding(
       padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
       child: TextFormField(
@@ -114,27 +111,33 @@ class _LoginScreenState extends State<LoginScreen> {
           width: double.infinity,
           child: ElevatedButton(
             // Disable button by setting onPressed to null when loading
-            onPressed: isLoading ? null : () async {
-              await _permissionsService.requestNotificationPermission();
-
-              String resultMessage = await authProvider.signIn();
-              // Check if the widget is still mounted before showing UI
-              if (mounted && resultMessage != "Success") {
-                showAppSnackBar(context, resultMessage, isError: true);
-              }
-            },
+            onPressed: isLoading
+                ? null
+                : () async {
+                    String resultMessage = await authProvider.signIn();
+                    // Check if the widget is still mounted before showing UI
+                    if (mounted && resultMessage != "Success") {
+                      showAppSnackBar(context, resultMessage, isError: true);
+                    }
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blueAccent,
               shape: const StadiumBorder(),
-              padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall),
+              padding: const EdgeInsets.symmetric(
+                  vertical: Dimensions.paddingSizeSmall),
             ),
             // Show a loading indicator inside the button
             child: isLoading
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2))
                 : const Text(
-              'Log in',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
+                    'Log in',
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
           ),
         );
       },
@@ -149,25 +152,34 @@ class _LoginScreenState extends State<LoginScreen> {
         return SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            icon: isLoading ? Container() : Image.asset(Images.google, width: 24), // Hide icon when loading
+            icon: isLoading
+                ? Container()
+                : Image.asset(Images.google,
+                    width: 24), // Hide icon when loading
             label: isLoading
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2))
                 : const Text(
-              'Sign in with Google',
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-            ),
-            onPressed: isLoading ? null : () async {
-              await _permissionsService.requestNotificationPermission();
-
-              String resultMessage = await authProvider.signInWithGoogle();
-              if (mounted && resultMessage != "Success") {
-                showAppSnackBar(context, resultMessage, isError: true);
-              }
-            },
+                    'Sign in with Google',
+                    style: TextStyle(
+                        color: Colors.black, fontWeight: FontWeight.bold),
+                  ),
+            onPressed: isLoading
+                ? null
+                : () async {
+                    String resultMessage =
+                        await authProvider.signInWithGoogle();
+                    if (mounted && resultMessage != "Success") {
+                      showAppSnackBar(context, resultMessage, isError: true);
+                    }
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               shape: const StadiumBorder(),
-              padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall),
+              padding: const EdgeInsets.symmetric(
+                  vertical: Dimensions.paddingSizeSmall),
             ),
           ),
         );
@@ -182,7 +194,8 @@ class _LoginScreenState extends State<LoginScreen> {
         onPressed: () => changeScreen(context, ForgotPasswordScreen()),
         child: Text(
           'forgot password',
-          style: TextStyle(color: Colors.black, fontSize: Dimensions.fontSizeDefault),
+          style: TextStyle(
+              color: Colors.black, fontSize: Dimensions.fontSizeDefault),
         ),
       ),
     );

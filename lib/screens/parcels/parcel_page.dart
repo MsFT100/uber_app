@@ -1,238 +1,366 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../models/trip.dart';
-import '../../providers/app_state.dart';
-import '../../providers/user_provider.dart';
-import '../../providers/location_provider.dart';
+import '../../models/saved_address.dart';
+import '../../utils/app_constants.dart';
+import '../../utils/dimensions.dart';
 import '../../widgets/app_bar/app_bar.dart';
-import 'find_driver.dart';
+import 'parcel_location_selection_screen.dart';
+import 'parcel_vehicle_selection_screen.dart';
 
 class ParcelPage extends StatefulWidget {
-  const ParcelPage({Key? key}) : super(key: key);
+  const ParcelPage({super.key});
 
   @override
   State<ParcelPage> createState() => _ParcelPageState();
 }
 
 class _ParcelPageState extends State<ParcelPage> {
-  final _formKey = GlobalKey<FormState>();
   final _senderNameController = TextEditingController();
-  final _senderContactController = TextEditingController();
+  final _senderPhoneController = TextEditingController();
+  final _senderAddressController = TextEditingController();
   final _recipientNameController = TextEditingController();
-  final _recipientContactController = TextEditingController();
-  final _weightController = TextEditingController();
-  final _destinationController = TextEditingController();
+  final _recipientPhoneController = TextEditingController();
+  final _recipientAddressController = TextEditingController();
+  final _parcelDescriptionController = TextEditingController();
 
-  String? _selectedParcelType = 'Standard';
-  String _selectedVehicleType = 'Moto Express';
-  LatLng? _destinationLatLng;
-
-  final List<String> _parcelTypes = ['Standard', 'Medium Package', 'Large Package'];
-  final List<String> _vehicleTypes = ['Moto Express', 'Car', 'Truck'];
+  LatLng? _pickupCoordinates;
+  LatLng? _dropoffCoordinates;
+  // Add state for parcel size
+  String _selectedParcelSize = 'Small'; // Default to 'Small'
+  final List<String> _parcelSizes = ['Small', 'Medium', 'Large'];
 
   @override
-  void initState() {
-    super.initState();
-    final user = Provider.of<UserProvider>(context, listen: false).user;
-    if (user != null) {
-      _senderNameController.text = user.displayName ?? '';
-      _senderContactController.text = user.phoneNumber ?? '';
+  void dispose() {
+    _senderNameController.dispose();
+    _senderPhoneController.dispose();
+    _senderAddressController.dispose();
+    _recipientNameController.dispose();
+    _recipientPhoneController.dispose();
+    _recipientAddressController.dispose();
+    _parcelDescriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<List<SavedAddress>> _getSavedAddresses() async {
+    final prefs = await SharedPreferences.getInstance();
+    final addressesJson = prefs.getStringList('addresses') ?? [];
+    return addressesJson.map((json) => SavedAddress.fromJson(json)).toList();
+  }
+
+  Future<void> _onLocationFieldTapped(
+      TextEditingController controller, String label) async {
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.map_outlined),
+                title: const Text('Choose from map'),
+                onTap: () async {
+                  Navigator.pop(context); // Close the bottom sheet first
+                  final result = await Navigator.push<Map<String, dynamic>>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ParcelLocationSelectionScreen(title: label),
+                    ),
+                  );
+                  if (result != null && result.containsKey('address')) {
+                    controller.text = result['address'];
+                    if (label.contains("Pickup")) {
+                      _pickupCoordinates = result['coordinates'];
+                    } else {
+                      _dropoffCoordinates = result['coordinates'];
+                    }
+                  }
+                },
+              ),
+              const Divider(),
+              FutureBuilder<List<SavedAddress>>(
+                future: _getSavedAddresses(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const SizedBox.shrink();
+                  final addresses = snapshot.data!;
+                  return Column(
+                    children: addresses.map((savedAddress) {
+                      return ListTile(
+                        leading: Icon(savedAddress.label == 'Home'
+                            ? Icons.home_outlined
+                            : savedAddress.label == 'Work'
+                                ? Icons.work_outline
+                                : Icons.location_on_outlined),
+                        title: Text(savedAddress.label),
+                        subtitle: Text(savedAddress.address, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        onTap: () => _handleSavedAddressSelection(savedAddress, controller, label),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleSavedAddressSelection(SavedAddress savedAddress,
+      TextEditingController controller, String label) async {
+    Navigator.pop(context); // Close bottom sheet
+    controller.text = savedAddress.address;
+
+    try {
+      List<Location> locations =
+          await locationFromAddress(savedAddress.address);
+      if (locations.isNotEmpty) {
+        final coords =
+            LatLng(locations.first.latitude, locations.first.longitude);
+        if (label.contains("Pickup")) {
+          _pickupCoordinates = coords;
+        } else {
+          _dropoffCoordinates = coords;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('${savedAddress.label} location set.'),
+              backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Could not find location for the address: $e'),
+            backgroundColor: Colors.red),
+      );
     }
+  }
+
+  void _validateAndContinue() {
+    // Basic validation
+    if (_senderNameController.text.isEmpty ||
+        _senderPhoneController.text.isEmpty ||
+        _senderAddressController.text.isEmpty ||
+        _recipientNameController.text.isEmpty ||
+        _recipientPhoneController.text.isEmpty ||
+        _recipientAddressController.text.isEmpty ||
+        _parcelDescriptionController.text.isEmpty ||
+        _pickupCoordinates == null ||
+        _dropoffCoordinates == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Please fill in all fields.'),
+            backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    // All good, package the data and navigate
+    final parcelData = {
+      'pickupCoordinates': _pickupCoordinates,
+      'dropoffCoordinates': _dropoffCoordinates,
+      'pickupAddress': _senderAddressController.text,
+      'dropoffAddress': _recipientAddressController.text,
+      'senderName': _senderNameController.text,
+      'senderPhone': _senderPhoneController.text,
+      'recipientName': _recipientNameController.text,
+      'recipientPhone': _recipientPhoneController.text,
+      'description': _parcelDescriptionController.text,
+      'size': _selectedParcelSize.toLowerCase(),
+    };
+
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => ParcelVehicleSelectionScreen(parcelData: parcelData),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: 'Send a Parcel', showNavBack: true, centerTitle: true),
+      appBar: const CustomAppBar(
+        title: "Create a Delivery",
+        showNavBack: true,
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildSectionTitle('Sender Details'),
-              _buildTextField(_senderNameController, 'Name', Icons.person),
-              _buildTextField(_senderContactController, 'Contact', Icons.phone, inputType: TextInputType.phone),
-              const SizedBox(height: 16),
-              _buildSectionTitle('Recipient Details'),
-              _buildTextField(_recipientNameController, 'Name', Icons.person),
-              _buildTextField(_recipientContactController, 'Contact', Icons.phone, inputType: TextInputType.phone),
-              const SizedBox(height: 16),
-              _buildSectionTitle('Parcel Details'),
-              _buildDropdown(_parcelTypes, 'Parcel Type', _selectedParcelType, (val) => setState(() => _selectedParcelType = val)),
-              const SizedBox(height: 12),
-              _buildTextField(_weightController, 'Weight (kg)', Icons.line_weight, inputType: TextInputType.number),
-              const SizedBox(height: 16),
-              _buildSectionTitle('Delivery Details'),
-              _buildDestinationSearch(),
-              const SizedBox(height: 12),
-              _buildDropdown(_vehicleTypes, 'Vehicle Type', _selectedVehicleType, (val) => setState(() => _selectedVehicleType = val!)),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _submitForm,
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                child: const Text('Request Parcel Delivery'),
+        padding: EdgeInsets.all(Dimensions.paddingSizeLarge),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader("Sender Details", Icons.person_outline),
+            const SizedBox(height: Dimensions.paddingSize),
+            _buildTextField(
+                _senderNameController, "Sender's Name", Icons.badge_outlined),
+            const SizedBox(height: Dimensions.paddingSizeDefault),
+            _buildTextField(
+                _senderPhoneController, "Sender's Phone", Icons.phone_outlined,
+                keyboardType: TextInputType.phone),
+            const SizedBox(height: Dimensions.paddingSizeDefault),
+            _buildLocationField(
+                _senderAddressController, "Pickup Address", Icons.my_location),
+            const SizedBox(height: Dimensions.paddingSizeExtraLarge),
+            _buildSectionHeader(
+                "Recipient Details", Icons.person_pin_circle_outlined),
+            const SizedBox(height: Dimensions.paddingSize),
+            _buildTextField(_recipientNameController, "Recipient's Name",
+                Icons.badge_outlined),
+            const SizedBox(height: Dimensions.paddingSizeDefault),
+            _buildTextField(_recipientPhoneController, "Recipient's Phone",
+                Icons.phone_outlined,
+                keyboardType: TextInputType.phone),
+            const SizedBox(height: Dimensions.paddingSizeDefault),
+            _buildLocationField(_recipientAddressController, "Drop-off Address",
+                Icons.location_on_outlined),
+            const SizedBox(height: Dimensions.paddingSizeExtraLarge),
+            _buildSectionHeader("Parcel Details", Icons.archive_outlined),
+            const SizedBox(height: Dimensions.paddingSize),
+            _buildTextField(
+              _parcelDescriptionController,
+              "Parcel Description (e.g., 'A box of documents')",
+              Icons.description_outlined,
+              maxLines: 3,
+            ),
+            const SizedBox(height: Dimensions.paddingSizeDefault),
+            _buildParcelSizeSelector(),
+            const SizedBox(height: Dimensions.paddingSizeExtraLarge),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _validateAndContinue,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConstants.lightPrimary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                      vertical: Dimensions.paddingSizeLarge),
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(Dimensions.radiusDefault),
+                  ),
+                ),
+                child: const Text(
+                  "Continue to Vehicle Selection",
+                  style: TextStyle(
+                      fontSize: Dimensions.fontSizeLarge,
+                      fontWeight: FontWeight.bold),
+                ),
               ),
-            ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: AppConstants.lightPrimary, size: 24),
+        const SizedBox(width: Dimensions.paddingSizeSmall),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: Dimensions.fontSizeExtraLarge,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.shade800,
           ),
         ),
-      ),
+      ],
     );
   }
 
-  void _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
-    final appState = Provider.of<AppStateProvider>(context, listen: false);
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final accessToken = userProvider.accessToken;
-
-    final pickupLatLng = locationProvider.center;
-    final pickupAddress = locationProvider.locationAddress;
-
-    if (pickupAddress == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Could not get your current location.")));
-      return;
-    }
-    if (_destinationLatLng == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select a destination.")));
-      return;
-    }
-    if (accessToken == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("You must be logged in to request a trip.")));
-      return;
-    }
-
-    final trip = Trip(
-      riderId: userProvider.user!.uid,
-      type: TripType.parcel,
-      pickup: pickupLatLng,
-      pickupAddress: pickupAddress,
-      destination: _destinationLatLng!,
-      destinationAddress: _destinationController.text,
-      senderName: _senderNameController.text,
-      senderContact: _senderContactController.text,
-      recipientName: _recipientNameController.text,
-      recipientContact: _recipientContactController.text,
-      weight: double.tryParse(_weightController.text),
-      parcelType: _selectedParcelType,
-      vehicleType: _selectedVehicleType,
-    );
-
-    try {
-      await appState.requestNewTrip(trip, accessToken);
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const FindDriverScreen()));
-    } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${error.toString()}')));
-    }
-  }
-
-  Widget _buildDestinationSearch() {
-    return InkWell(
-      onTap: () async {
-        final result = await showSearch<PlaceSuggestion?>(
-          context: context,
-          delegate: AddressSearchDelegate(),
-        );
-        if (result != null) {
-          setState(() {
-            _destinationController.text = result.description;
-            _destinationLatLng = LatLng(result.lat, result.lng);
-          });
-        }
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          prefixIcon: const Icon(Icons.location_on),
-          labelText: 'Destination',
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        child: Text(_destinationController.text.isEmpty ? 'Select destination' : _destinationController.text, overflow: TextOverflow.ellipsis),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
-      child: Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-    );
-  }
-
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {TextInputType? inputType}) {
-    return TextFormField(
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+  }) {
+    return TextField(
       controller: controller,
-      keyboardType: inputType,
-      decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Colors.grey.shade700),
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: Colors.white12,
-      ),
-      validator: (value) => (value == null || value.isEmpty) ? 'This field is required' : null,
-    );
-  }
-
-  Widget _buildDropdown(List<String> items, String label, String? selected, ValueChanged<String?> onChanged) {
-    return DropdownButtonFormField<String>(
-      value: selected,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        prefixIcon: const Icon(Icons.category),
+        prefixIcon: Icon(icon, color: Colors.grey.shade600),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+          borderSide:
+              const BorderSide(color: AppConstants.lightPrimary, width: 2),
+        ),
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
       ),
-      items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
-      onChanged: onChanged,
-      validator: (value) => value == null ? 'Please select an option' : null,
-    );
-  }
-}
-
-class AddressSearchDelegate extends SearchDelegate<PlaceSuggestion?> {
-  @override
-  List<Widget> buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: const Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-        },
-      ),
-    ];
-  }
-
-  @override
-  Widget buildLeading(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, null);
-      },
     );
   }
 
-  @override
-  Widget buildResults(BuildContext context) {
-    // In a real app, you would make an API call to a geocoding service
-    return Container();
+  Widget _buildParcelSizeSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Parcel Size",
+          style: TextStyle(
+            fontSize: Dimensions.fontSizeDefault,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: Dimensions.paddingSizeSmall),
+        Wrap(
+          spacing: Dimensions.paddingSizeSmall,
+          children: _parcelSizes.map((size) {
+            return ChoiceChip(
+              label: Text(size),
+              labelStyle: TextStyle(
+                  color: _selectedParcelSize == size
+                      ? Colors.white
+                      : Colors.black87),
+              selected: _selectedParcelSize == size,
+              onSelected: (isSelected) {
+                if (isSelected) {
+                  setState(() => _selectedParcelSize = size);
+                }
+              },
+              selectedColor: AppConstants.lightPrimary,
+              backgroundColor: Colors.grey.shade200,
+            );
+          }).toList(),
+        ),
+      ],
+    );
   }
 
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    // In a real app, you would show suggestions as the user types
-    return ListView();
+  Widget _buildLocationField(
+    TextEditingController controller,
+    String label,
+    IconData icon,
+  ) {
+    return TextField(
+      controller: controller,
+      readOnly: true,
+      onTap: () => _onLocationFieldTapped(controller, label),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: Colors.grey.shade600),
+        suffixIcon: const Icon(Icons.arrow_forward_ios_rounded,
+            size: 16, color: AppConstants.lightPrimary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+          borderSide:
+              const BorderSide(color: AppConstants.lightPrimary, width: 2),
+        ),
+      ),
+    );
   }
-}
-
-class PlaceSuggestion {
-  final String description;
-  final double lat;
-  final double lng;
-
-  PlaceSuggestion({required this.description, required this.lat, required this.lng});
 }

@@ -29,9 +29,11 @@ class DriverFoundWidget extends StatelessWidget {
         children: [
           const SizedBox(height: 10),
           Text(
-            trip.status == TripStatus.en_route_to_pickup
-                ? "Driver is on the way"
-                : "Driver Found!",
+            trip.status == TripStatus.arrived_at_pickup
+                ? "Your driver is here!"
+                : (trip.status == TripStatus.en_route_to_pickup
+                    ? "Driver is on the way"
+                    : "Driver Found!"),
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -93,7 +95,7 @@ class DriverFoundWidget extends StatelessWidget {
                 icon: const Icon(Icons.call, size: 28),
                 color: theme.primaryColor,
                 style: IconButton.styleFrom(
-                  backgroundColor: theme.primaryColor.withOpacity(0.1),
+                  backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
                   padding: const EdgeInsets.all(12),
                 ),
                 onPressed: () async {
