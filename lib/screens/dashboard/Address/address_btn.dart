@@ -120,7 +120,6 @@ class _HomeMyAddressState extends State<HomeMyAddress> {
             List<SavedAddress> savedAddresses = snapshot.data ?? [];
 
             if (savedAddresses.isEmpty) {
-              return _buildAddAddressCard(context, isStandalone: true);
               return _buildAddAddressCard(context,
                   isStandalone: true, onAdd: _navigateAndRefresh);
             }
@@ -137,7 +136,6 @@ class _HomeMyAddressState extends State<HomeMyAddress> {
                   // If we are at the end of the list and there's space for more, show the 'Add' card.
                   if (index == savedAddresses.length &&
                       savedAddresses.length < 5) {
-                    return _buildAddAddressCard(context, isStandalone: false);
                     return _buildAddAddressCard(context,
                         isStandalone: false, onAdd: _navigateAndRefresh);
                   }
@@ -217,25 +215,11 @@ class _HomeMyAddressState extends State<HomeMyAddress> {
 
 // Add Address Card
 Widget _buildAddAddressCard(BuildContext context,
-    {required bool isStandalone}) {
     {required bool isStandalone, required VoidCallback onAdd}) {
   // If it's a standalone card (no other addresses exist), make it full width.
   // Otherwise, make it a smaller card to fit in the horizontal list.
   if (isStandalone) {
     return GestureDetector(
-      onTap: () async {
-        final result = await Navigator.push<bool>(
-          context,
-          MaterialPageRoute(builder: (context) => AddNewAddressPage()),
-        );
-        if (result == true && context.mounted) {
-          // Trigger a rebuild on the parent stateful widget that contains this card.
-          final parentState = context.findAncestorStateOfType<_HomeMyAddressState>();
-          if (parentState != null && parentState.mounted) {
-            parentState.setState(() {});
-          }
-        }
-      },
       onTap:
           onAdd, // Use the callback to handle navigation and state refresh.
       child: Container(
@@ -272,7 +256,6 @@ Widget _buildAddAddressCard(BuildContext context,
 
   // Compact card for horizontal list
   return GestureDetector(
-    onTap: () => changeScreen(context, AddNewAddressPage()),
     onTap: onAdd, // Use the callback here as well.
     child: Card(
       elevation: 3,

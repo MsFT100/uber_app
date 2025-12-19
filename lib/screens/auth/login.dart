@@ -10,15 +10,20 @@ import '../../providers/user_provider.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/dimensions.dart';
 import '../../utils/images.dart';
+import '../menu.dart';
 import '../../widgets/app_snackbar.dart';
 
 class LoginScreen extends StatefulWidget {
+
+  const LoginScreen({Key? key}) : super(key: key);
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  
+  final _formKey = GlobalKey<FormState>(); // Add a GlobalKey for the Form
+
   @override
   Widget build(BuildContext context) {
     // Changed from listen:true to listen:false. We don't want the whole page to rebuild.
@@ -30,9 +35,11 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: Form( // Wrap in a Form widget
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               const SizedBox(height: Dimensions.paddingSizeExtraLarge),
               Image.asset(Images.logoWithName, height: 75),
               const SizedBox(height: 8.0),
@@ -77,14 +84,17 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
+    ),);
   }
 
   Widget _buildTextField(TextEditingController controller, String label,
-      IconData icon, bool obscureText) {
+      IconData icon, bool obscureText,
+      {String? Function(String?)? validator}) {
     return Padding(
       padding: const EdgeInsets.all(Dimensions.paddingSizeSmall),
       child: TextFormField(
+        validator: validator,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         controller: controller,
         obscureText: obscureText,
         style: TextStyle(fontSize: Dimensions.fontSizeSmall),
@@ -101,43 +111,69 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Corrected the method signature and added logic to disable the button while loading
+  // --- Validation Methods ---
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Email is required.';
+    }
+    // Regular expression for a valid email format
+    final emailRegex =
+        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(value)) {
+      return 'Please enter a valid email address.';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Password is required.';
+    }
+    return null; // Simple check for login, length check is more for registration
+  }
+
   Widget _buildLoginButton(UserProvider authProvider) {
-    // Using a Consumer here to only rebuild the button when the status changes.
     return Consumer<UserProvider>(
       builder: (context, provider, child) {
-        bool isLoading = provider.status == Status.Authenticating;
+        final isLoading = provider.status == Status.Authenticating;
+
         return SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            // Disable button by setting onPressed to null when loading
             onPressed: isLoading
                 ? null
                 : () async {
-                    String resultMessage = await authProvider.signIn();
-                    // Check if the widget is still mounted before showing UI
-                    if (mounted && resultMessage != "Success") {
+                    // First, validate the form
+                    if (!_formKey.currentState!.validate()) {
+                      showAppSnackBar(
+                          context, "Please correct the errors in the form.",
+                          isError: true);
+                      return;
+                    }
+
+                    final resultMessage = await provider.signIn();
+
+                    if (!context.mounted) return;
+
+                    if (resultMessage == "Success") {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (_) => Menu()),
+                      );
+                    } else {
                       showAppSnackBar(context, resultMessage, isError: true);
                     }
                   },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
-              shape: const StadiumBorder(),
-              padding: const EdgeInsets.symmetric(
-                  vertical: Dimensions.paddingSizeSmall),
-            ),
-            // Show a loading indicator inside the button
             child: isLoading
                 ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2))
-                : const Text(
-                    'Log in',
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+                : const Text("Log in"),
           ),
         );
       },
@@ -171,8 +207,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 : () async {
                     String resultMessage =
                         await authProvider.signInWithGoogle();
-                    if (mounted && resultMessage != "Success") {
-                      showAppSnackBar(context, resultMessage, isError: true);
+                    if (!mounted) return; // Always check if the widget is still in the tree
+
+                    if (resultMessage == "Success") {
+                      // Navigate to the Menu screen on successful login
+                      changeScreenReplacement(context, Menu());
+                    } else {
+                      showAppSnackBar(context, resultMessage, isError: true); // Show error if it failed
                     }
                   },
             style: ElevatedButton.styleFrom(

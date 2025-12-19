@@ -19,9 +19,9 @@ import '../widgets/trip_draggable.dart';
 import 'map.dart';
 
 class HomePage extends StatefulWidget {
-  HomePage({
-    super.key,
-  });
+
+  const HomePage({Key? key}) : super(key: key);
+
 
   @override
   _HomePageState createState() => _HomePageState();

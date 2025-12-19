@@ -22,7 +22,6 @@ class _ParcelLocationSelectionScreenState
     extends State<ParcelLocationSelectionScreen> {
   LatLng? _selectedPosition;
   String _selectedAddress = "Pan map to select location";
-  GoogleMapController? _mapController;
   bool _isLoadingAddress = false;
 
   @override
@@ -97,7 +96,6 @@ class _ParcelLocationSelectionScreenState
               target: locationProvider.center,
               zoom: 15,
             ),
-            onMapCreated: (controller) => _mapController = controller,
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
             onCameraMove: (position) {

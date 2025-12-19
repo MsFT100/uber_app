@@ -7,12 +7,17 @@ import 'package:flutter/material.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final Function(int) onItemSelected;
-
-  CustomBottomNavBar({required this.onItemSelected});
+  final int selectedIndex;
+  // UPDATED: The constructor to accept selectedIndex
+  CustomBottomNavBar({
+    required this.onItemSelected,
+    required this.selectedIndex,
+  });
 
   @override
   Widget build(BuildContext context) {
     return CurvedNavigationBar(
+      index: selectedIndex,
       backgroundColor: Colors.transparent,
       color: AppConstants.lightPrimary,
       animationDuration: Duration(milliseconds: 300),
